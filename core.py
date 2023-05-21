@@ -1,6 +1,6 @@
 import tkinter
 import customtkinter as ctk
-
+from course_weather_loader import CourseWeatherLoader
 
 class Core:
     def __init__(self):
@@ -18,6 +18,10 @@ class Core:
         self.__time_entry = None
 
     def run(self):
+        self.__initialize_gui()
+        self.__app.mainloop()
+
+    def __initialize_gui(self):
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("dark-blue")
 
@@ -190,8 +194,6 @@ class Core:
         map_frame.grid(row=0, column=2, padx=(10, 0), pady=(100, 100), sticky="nsew")
         map_frame.grid_rowconfigure(0, weight=1)
         # endregion
-
-        self.__app.mainloop()
 
     def __search_keyword(self):
         search_type = self.__search_menu.get()
