@@ -11,11 +11,13 @@ class Core:
         self.__search_entry = None
         self.__searched_locations = []
         self.__selected_location_button_index = 0
-
         self.__year_entry = None
         self.__month_entry = None
         self.__day_entry = None
-        self.__time_entry = None
+        self.__date_search_button = None
+        self.__search_result_frame = None
+
+        self.__cw_loader = CourseWeatherLoader()
 
     def run(self):
         self.__initialize_gui()
@@ -26,7 +28,7 @@ class Core:
         ctk.set_default_color_theme("dark-blue")
 
         self.__app = ctk.CTk()
-        self.__app.geometry("860x550")
+        self.__app.geometry("890x550")
         self.__app.title("Travel & Weather")
         self.__app.grid_rowconfigure(0, weight=1)
 
@@ -56,32 +58,18 @@ class Core:
                                       width=30,
                                       height=15,
                                       corner_radius=0,
-                                      command=self.__search_keyword)
+                                      command=self.__on_keyword_searched)
         search_button.grid(row=2, column=0, padx=(0, 0), pady=(5, 0), sticky="nsew")
         # endregion
 
         # region 검색 결과 프레임을 정의합니다.
-        search_result_frame = ctk.CTkScrollableFrame(master=search_frame,
+        self.__search_result_frame = ctk.CTkScrollableFrame(master=search_frame,
                                                      height=150,
                                                      label_font=self.__basic_font,
                                                      label_text="검색 결과",
                                                      corner_radius=5)
-        search_result_frame.grid(row=3, column=0, pady=(10, 0), sticky="nsew")
-        search_result_frame.grid_columnconfigure(0, weight=1)
-
-        for i in range(100):
-            button = ctk.CTkButton(master=search_result_frame,
-                                   font=self.__basic_font,
-                                   text=f"CTkSwitch {i}",
-                                   width=search_frame.cget("width"),
-                                   fg_color='transparent',
-                                   text_color="black",
-                                   text_color_disabled="black",
-                                   corner_radius=0,
-                                   command=lambda x=i: self.__on_location_selected(x))
-            button.grid(row=i, column=0, padx=(5, 0))
-
-            self.__searched_locations.append(button)
+        self.__search_result_frame.grid(row=3, column=0, pady=(10, 0), sticky="nsew")
+        self.__search_result_frame.grid_columnconfigure(0, weight=1)
         # endregion
 
         # region 추천 코스 프레임을 정의합니다.
@@ -93,7 +81,7 @@ class Core:
         course_label = ctk.CTkLabel(master=course_frame,
                                     font=self.__basic_font,
                                     text="코스",
-                                    bg_color=search_result_frame.cget("label_fg_color"),
+                                    bg_color=self.__search_result_frame.cget("label_fg_color"),
                                     corner_radius=10)
         course_label.grid(row=0, column=0, padx=(5, 5), pady=(5, 0), sticky="nsew")
 
@@ -148,6 +136,14 @@ class Core:
                                              command=self.__on_date_changed)
         self.__day_entry.grid(row=0, column=2, stick="nsew")
 
+        self.__date_search_button = ctk.CTkButton(master=weather_frame,
+                                                  font=self.__basic_font,
+                                                  text="검색",
+                                                  width=15,
+                                                  height=20,
+                                                  corner_radius=0)
+        self.__date_search_button.grid(row=0, column=3, stick="nsew")
+
         temperature_label = ctk.CTkLabel(master=weather_frame,
                                          font=self.__basic_font,
                                          text="기온")
@@ -184,7 +180,7 @@ class Core:
                                                width=10,
                                                height=15,
                                                corner_radius=5,
-                                               command=self.__search_keyword)
+                                               command=self.__on_keyword_searched)
         weather_details_button.grid(row=6, column=1, padx=(0, 0), pady=(0, 15))
         # endregion
 
@@ -195,20 +191,36 @@ class Core:
         map_frame.grid_rowconfigure(0, weight=1)
         # endregion
 
-    def __search_keyword(self):
+    def __on_keyword_searched(self):
         search_type = self.__search_menu.get()
         search_keyword = self.__search_entry.get()
 
         if search_type == '지역명':
-            pass
+            course_names = self.__cw_loader.find_course_names_by_local_name(search_keyword)
+
+            for button in self.__searched_locations:
+                button.destroy()
+            self.__searched_locations.clear()
+
+            self.__selected_location_button_index = 0
+
+            for i, course_name in enumerate(course_names):
+                button = ctk.CTkButton(master=self.__search_result_frame,
+                                       font=self.__basic_font,
+                                       text=course_name,
+                                       fg_color='transparent',
+                                       text_color="black",
+                                       text_color_disabled="black",
+                                       corner_radius=0,
+                                       command=lambda x=i: self.__on_location_selected(x))
+                button.grid(row=i, column=0, padx=(5, 0))
+                self.__searched_locations.append(button)
         elif search_type == '관광지명':
             pass
         elif search_type == "시군구":
             pass
         else:
             assert (False, "지원하지 않는 검색 유형입니다.")
-
-        print(search_type + search_keyword)
 
     def __on_location_selected(self, button_index):
         prev_button = self.__searched_locations[self.__selected_location_button_index]
