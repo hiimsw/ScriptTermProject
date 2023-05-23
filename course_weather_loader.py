@@ -12,23 +12,41 @@ class CourseWeatherLoader:
             self.__courses[course_id] = []
             self.__courses[course_id].append(item.findtext("name"))
 
-            courses = item.findall("course")
-            for course in courses:
-                self.__courses[course_id].append(course.text)
+            tourist_spots = item.findall("tourist_spot")
+            for tourist_spot in tourist_spots:
+                self.__courses[course_id].append(tourist_spot.text)
 
-    def find_course_names_by_local_name(self, local_name):
-        found_course_names = []
+    def find_tourist_spots_by_local_name(self, local_name):
+        found_tourist_spots = []
 
-        for course_list in self.__courses.values():
-            for i, course_name in enumerate(course_list):
-                # 코스명은 지역명 검색에서 제외합니다.
-                if i == 0:
-                    continue
+        courses = list(self.__courses.items())
+        for course in courses:
+            course: tuple = tuple(course)
+            tourist_spots = course[1]
+            for i in range(1, len(tourist_spots)):
+                tourist_spot = tourist_spots[i]
+                if local_name == tourist_spot[1:tourist_spot.find(')')]:
+                    found_tourist_spots.append((course[0], tourist_spot))
 
-                if local_name == course_name[1:course_name.find(')')]:
-                    found_course_names.append(course_name)
+        return found_tourist_spots
 
-        return found_course_names
+    def find_recommand_course(self, course_id, any_tourist_spot):
+        recommand_course = []
+
+        courses = list(self.__courses.items())
+        for course in courses:
+            course: tuple = tuple(course)
+            if course[0] != course_id:
+                continue
+
+            tourist_spots = course[1]
+            for i in range(1, len(tourist_spots)):
+                tourist_spot = tourist_spots[i]
+                if tourist_spot == any_tourist_spot:
+                    recommand_course = course[1][:]
+                    return recommand_course
+
+        return recommand_course
 
     def run(self):
         pass

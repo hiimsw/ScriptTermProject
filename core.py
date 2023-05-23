@@ -1,12 +1,12 @@
-import tkinter
 import customtkinter as ctk
 from course_weather_loader import CourseWeatherLoader
+
 
 class Core:
     def __init__(self):
         self.__app = None
-
         self.__basic_font = None
+        self.__search_frame = None
         self.__search_menu = None
         self.__search_entry = None
         self.__searched_locations = []
@@ -16,6 +16,8 @@ class Core:
         self.__day_entry = None
         self.__date_search_button = None
         self.__search_result_frame = None
+        self.__recommand_course_frame = None
+        self.__recommand_tourist_spot_labels = []
 
         self.__cw_loader = CourseWeatherLoader()
 
@@ -35,13 +37,11 @@ class Core:
         self.__basic_font = ctk.CTkFont(family="맑은 고딕", size=12)
 
         # region 검색 프레임을 정의합니다.
-        search_frame = ctk.CTkFrame(master=self.__app,
-                                    fg_color='transparent',
-                                    corner_radius=0)
-        search_frame.grid(row=0, column=0, padx=(10, 0), pady=(20, 20), rowspan=6, sticky="nsew")
-        search_frame.grid_rowconfigure(5, weight=1)
+        self.__search_frame = ctk.CTkFrame(master=self.__app, fg_color='transparent', corner_radius=0)
+        self.__search_frame.grid(row=0, column=0, padx=(10, 0), pady=(20, 20), rowspan=6, sticky="nsew")
+        self.__search_frame.grid_rowconfigure(4, weight=1)
 
-        self.__search_menu = ctk.CTkOptionMenu(search_frame,
+        self.__search_menu = ctk.CTkOptionMenu(self.__search_frame,
                                                values=["지역명", "관광지명", "시군구"],
                                                font=self.__basic_font,
                                                height=20,
@@ -49,10 +49,10 @@ class Core:
                                                corner_radius=0)
         self.__search_menu.grid(row=0, column=0, padx=(0, 0), pady=(0, 0), sticky="nsew")
 
-        self.__search_entry = ctk.CTkEntry(search_frame, font=self.__basic_font, corner_radius=0)
+        self.__search_entry = ctk.CTkEntry(self.__search_frame, font=self.__basic_font, corner_radius=0)
         self.__search_entry.grid(row=1, column=0, padx=(0, 0), pady=(5, 0), sticky="nsew")
 
-        search_button = ctk.CTkButton(search_frame,
+        search_button = ctk.CTkButton(self.__search_frame,
                                       font=self.__basic_font,
                                       text="검색",
                                       width=30,
@@ -62,38 +62,16 @@ class Core:
         search_button.grid(row=2, column=0, padx=(0, 0), pady=(5, 0), sticky="nsew")
         # endregion
 
-        # region 검색 결과 프레임을 정의합니다.
-        self.__search_result_frame = ctk.CTkScrollableFrame(master=search_frame,
-                                                     height=150,
-                                                     label_font=self.__basic_font,
-                                                     label_text="검색 결과",
-                                                     corner_radius=5)
-        self.__search_result_frame.grid(row=3, column=0, pady=(10, 0), sticky="nsew")
-        self.__search_result_frame.grid_columnconfigure(0, weight=1)
-        # endregion
+        # 검색 결과 프레임을 정의합니다.
+        self.__create_search_result_frame()
 
         # region 추천 코스 프레임을 정의합니다.
-        course_frame = ctk.CTkFrame(master=search_frame
-                                    , corner_radius=5)
-        course_frame.grid(row=5, column=0, pady=(10, 0), sticky="nsew")
-        course_frame.grid_columnconfigure(0, weight=1)
-
-        course_label = ctk.CTkLabel(master=course_frame,
-                                    font=self.__basic_font,
-                                    text="코스",
-                                    bg_color=self.__search_result_frame.cget("label_fg_color"),
-                                    corner_radius=10)
-        course_label.grid(row=0, column=0, padx=(5, 5), pady=(5, 0), sticky="nsew")
-
-        a = ctk.CTkLabel(master=course_frame,
-                         font=self.__basic_font,
-                         text="포항")
-        a.grid(row=1, column=0, pady=(5, 0))
-
-        n = ctk.CTkLabel(master=course_frame,
-                         font=self.__basic_font,
-                         text="포항")
-        n.grid(row=2, column=0)
+        self.__recommand_course_frame = ctk.CTkScrollableFrame(master=self.__search_frame,
+                                                               label_font=self.__basic_font,
+                                                               label_text="추천 코스",
+                                                               corner_radius=5)
+        self.__recommand_course_frame.grid(row=4, column=0, pady=(10, 0), sticky="nsew")
+        self.__recommand_course_frame.grid_columnconfigure(0, weight=1)
         # endregion
 
         # region 날씨 프레임을 정의합니다.
@@ -191,28 +169,44 @@ class Core:
         map_frame.grid_rowconfigure(0, weight=1)
         # endregion
 
+    def __create_search_result_frame(self):
+        self.__search_result_frame = ctk.CTkScrollableFrame(master=self.__search_frame,
+                                                            label_font=self.__basic_font,
+                                                            label_text="검색 결과",
+                                                            corner_radius=5)
+        self.__search_result_frame.grid(row=3, column=0, pady=(10, 0), sticky="nsew")
+        self.__search_result_frame.grid_columnconfigure(0, weight=1)
+
     def __on_keyword_searched(self):
-        search_type = self.__search_menu.get()
         search_keyword = self.__search_entry.get()
+        if search_keyword == '':
+            return
+
+        search_type = self.__search_menu.get()
+
+        for label in self.__recommand_tourist_spot_labels:
+            label.destroy()
+        self.__recommand_tourist_spot_labels.clear()
 
         if search_type == '지역명':
-            course_names = self.__cw_loader.find_course_names_by_local_name(search_keyword)
-
             for button in self.__searched_locations:
                 button.destroy()
             self.__searched_locations.clear()
 
-            self.__selected_location_button_index = 0
+            # 스크롤 뷰 상태를 초기화하기 위해 검색 결과 프레임을 재생성합니다.
+            self.__search_result_frame.destroy()
+            self.__create_search_result_frame()
 
-            for i, course_name in enumerate(course_names):
+            tourist_spots = self.__cw_loader.find_tourist_spots_by_local_name(search_keyword)
+            for i, tourist_spot in enumerate(tourist_spots):
                 button = ctk.CTkButton(master=self.__search_result_frame,
                                        font=self.__basic_font,
-                                       text=course_name,
+                                       text=tourist_spot[1],
                                        fg_color='transparent',
                                        text_color="black",
                                        text_color_disabled="black",
                                        corner_radius=0,
-                                       command=lambda x=i: self.__on_location_selected(x))
+                                       command=lambda x=i, y=tourist_spot[0]: self.__on_location_selected(x, y))
                 button.grid(row=i, column=0, padx=(5, 0))
                 self.__searched_locations.append(button)
         elif search_type == '관광지명':
@@ -220,14 +214,30 @@ class Core:
         elif search_type == "시군구":
             pass
         else:
-            assert (False, "지원하지 않는 검색 유형입니다.")
+            assert False, "지원하지 않는 검색 유형입니다."
 
-    def __on_location_selected(self, button_index):
+        self.__selected_location_button_index = 0
+
+    def __on_location_selected(self, button_index, course_id):
         prev_button = self.__searched_locations[self.__selected_location_button_index]
         prev_button.configure(state="normal", fg_color="transparent")
 
         button = self.__searched_locations[button_index]
         button.configure(state="disabled", fg_color=['#3a7ebf', '#1f538d'])
+
+        recommand_course = self.__cw_loader.find_recommand_course(course_id, button.cget("text"))
+        assert len(recommand_course) > 0, "코스를 찾을 수 없습니다."
+
+        for label in self.__recommand_tourist_spot_labels:
+            label.destroy()
+        self.__recommand_tourist_spot_labels.clear()
+
+        for i in range(1, len(recommand_course)):
+            label = ctk.CTkLabel(master=self.__recommand_course_frame,
+                                 font=self.__basic_font,
+                                 text=recommand_course[i])
+            label.grid(row=i, column=0)
+            self.__recommand_tourist_spot_labels.append(label)
 
         self.__selected_location_button_index = button_index
 
