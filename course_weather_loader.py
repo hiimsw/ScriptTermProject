@@ -1,9 +1,14 @@
 import re
+from typing import Final
 import requests
 import xml.etree.ElementTree as ET
 
 
 class CourseWeatherLoader:
+    URL: Final = 'https://apis.data.go.kr/1360000/TourStnInfoService1/getTourStnVilageFcst1'
+    SERVICE_KEY: Final = "e/rfOsl+wjVcIDYyMVTu3nk5mQgunZXDeAEfr2gvG8+xq/VGPFSUThoVw1YJmmLy2wzC7OUCqQyt3MoUZicA/Q=="
+    NUM_OF_ROWS: Final = 100
+
     def __init__(self):
         self.__courses = {}
 
@@ -37,24 +42,19 @@ class CourseWeatherLoader:
         return tourist_spots[:]
 
     def search_weather(self, course_id, tourist_spot, date):
-        url = 'https://apis.data.go.kr/1360000/TourStnInfoService1/getTourStnVilageFcst1'
-        service_key = "e/rfOsl+wjVcIDYyMVTu3nk5mQgunZXDeAEfr2gvG8+xq/VGPFSUThoVw1YJmmLy2wzC7OUCqQyt3MoUZicA/Q=="
-        num_of_rows = 100
-        hour = 0
-
         searched_weather = {}
         total_page_count = 0
         page_no = 1
 
-        query_params = {"ServiceKey": service_key,
+        query_params = {"ServiceKey": self.SERVICE_KEY,
                         "pageNo": page_no,
-                        "numOfRows": num_of_rows,
+                        "numOfRows": self.NUM_OF_ROWS,
                         "CURRENT_DATE": date[:-2] + "00",  # 정보 조회를 위해 날짜를 조정합니다.
-                        "HOUR": hour,
+                        "HOUR": 0,
                         "COURSE_ID": course_id}
 
         while True:
-            response = requests.get(url, params=query_params)
+            response = requests.get(self.URL, params=query_params)
             root = ET.fromstring(response.text)
             body = root.find("body")
             items = body.find("items")
@@ -78,7 +78,7 @@ class CourseWeatherLoader:
 
                 return searched_weather
 
-            total_page_count += num_of_rows
+            total_page_count += self.NUM_OF_ROWS
             if total_page_count >= int(body.findtext("totalCount")):
                 break
 
