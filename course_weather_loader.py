@@ -43,20 +43,23 @@ class CourseWeatherLoader:
         hour = 0
 
         searched_weather = {}
+        total_page_count = 0
+        page_no = 1
 
-        for i in range(1, 3):
-            query_params = {"ServiceKey": service_key,
-                            "pageNo": i,
-                            "numOfRows": num_of_rows,
-                            "CURRENT_DATE": date[:-2] + "00",  # 정보 조회를 위해 날짜를 조정합니다.
-                            "HOUR": hour,
-                            "COURSE_ID": course_id}
+        query_params = {"ServiceKey": service_key,
+                        "pageNo": page_no,
+                        "numOfRows": num_of_rows,
+                        "CURRENT_DATE": date[:-2] + "00",  # 정보 조회를 위해 날짜를 조정합니다.
+                        "HOUR": hour,
+                        "COURSE_ID": course_id}
 
+        while True:
             response = requests.get(url, params=query_params)
             root = ET.fromstring(response.text)
+            body = root.find("body")
+            items = body.find("items")
 
-            elements = root.find("body").find("items")
-            for e in elements:
+            for e in items:
                 if tourist_spot != e.findtext("spotName"):
                     continue
 
@@ -74,6 +77,12 @@ class CourseWeatherLoader:
                 searched_weather.update({"th3": th3, "wd": wd, "ws": ws, "sky": sky, "rhm": rhm, "pop": pop})
 
                 return searched_weather
+
+            total_page_count += num_of_rows
+            if total_page_count >= int(body.findtext("totalCount")):
+                break
+
+            query_params["pageNo"] += 1
 
         return None
 
