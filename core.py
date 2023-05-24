@@ -21,6 +21,7 @@ class Core:
         self.__recommand_tourist_spot_buttons = []
         self.__selected_tourist_spot_button_index = 0
 
+        self.__selected_tourist_spot_course_id = 0
         self.__cw_loader = CourseWeatherLoader()
 
     def run(self):
@@ -86,7 +87,7 @@ class Core:
         date_frame = ctk.CTkFrame(master=weather_frame)
         date_frame.grid(row=0, column=0, sticky="nsew")
 
-        years = [str(2000 + i) for i in range(23, -1, -1)]
+        years = [str(2000 + i) for i in range(23, 18, -1)]
         self.__year_entry = ctk.CTkOptionMenu(date_frame,
                                               values=years,
                                               font=self.__basic_font,
@@ -256,6 +257,7 @@ class Core:
                 self.__selected_tourist_spot_button_index = button_index
 
         self.__selected_keyword_button_index = selected_button_index
+        self.__selected_tourist_spot_course_id = course_id
 
     def __on_tourist_spot_selected(self, selected_button_index):
         prev_button = self.__recommand_tourist_spot_buttons[self.__selected_tourist_spot_button_index]
@@ -267,13 +269,19 @@ class Core:
         self.__selected_tourist_spot_button_index = selected_button_index
 
     def __on_weather_selected(self):
+        assert self.__selected_tourist_spot_course_id > 0, "관광지를 선택해 주세요."
+
         year = self.__year_entry.get()
         month = self.__month_entry.get()
         day = self.__day_entry.get()
         time = self.__time_entry.get().split(':')[0]
         date = year + month + day + time
-        print(date)
 
+        tourist_spot = self.__recommand_tourist_spot_buttons[self.__selected_tourist_spot_button_index].cget("text")
+        searched_weather = self.__cw_loader.search_weather(self.__selected_tourist_spot_course_id,
+                                                           tourist_spot,
+                                                           date)
+        print(searched_weather)
 
 if __name__ == '__main__':
     core = Core()
