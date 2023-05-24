@@ -158,8 +158,7 @@ class Core:
                                                text="상세보기",
                                                width=10,
                                                height=15,
-                                               corner_radius=5,
-                                               command=self.__on_keyword_searched)
+                                               corner_radius=5)
         weather_details_button.grid(row=6, column=1, padx=(0, 0), pady=(0, 15))
         # endregion
 
@@ -226,8 +225,7 @@ class Core:
         selected_button = self.__searched_keyword[selected_button_index]
         selected_button.configure(state="disabled", fg_color=['#3a7ebf', '#1f538d'])
         selected_tourist_spot = selected_button.cget("text")
-        recommand_course = self.__cw_loader.find_recommand_course(course_id, selected_tourist_spot)
-        assert len(recommand_course) > 0, "코스를 찾을 수 없습니다."
+        recommand_course = self.__cw_loader.find_recommand_course(course_id)
 
         for button in self.__recommand_tourist_spot_buttons:
             button.destroy()

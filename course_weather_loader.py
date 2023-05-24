@@ -30,23 +30,10 @@ class CourseWeatherLoader:
 
         return found_tourist_spots
 
-    def find_recommand_course(self, course_id, any_tourist_spot):
-        recommand_course = []
-
-        courses = list(self.__courses.items())
-        for course in courses:
-            course: tuple = tuple(course)
-            if course[0] != course_id:
-                continue
-
-            tourist_spots = course[1]
-            for i in range(1, len(tourist_spots)):
-                tourist_spot = tourist_spots[i]
-                if tourist_spot == any_tourist_spot:
-                    recommand_course = course[1][:]
-                    return recommand_course
-
-        return recommand_course
+    def find_recommand_course(self, course_id):
+        assert course_id in self.__courses, "존재하지 않는 코스 ID입니다."
+        tourist_spots = self.__courses[course_id]
+        return tourist_spots[:]
 
     def run(self):
         pass
