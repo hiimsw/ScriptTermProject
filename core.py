@@ -14,6 +14,7 @@ class Core:
         self.__year_entry = None
         self.__month_entry = None
         self.__day_entry = None
+        self.__time_entry = None
         self.__date_search_button = None
         self.__search_result_frame = None
         self.__recommand_course_frame = None
@@ -55,12 +56,12 @@ class Core:
 
         search_button = ctk.CTkButton(self.__search_frame,
                                       font=self.__basic_font,
-                                      text="검색",
+                                      text="키워드 검색",
                                       width=30,
-                                      height=15,
+                                      height=20,
                                       corner_radius=0,
                                       command=self.__on_keyword_searched)
-        search_button.grid(row=2, column=0, padx=(0, 0), pady=(5, 0), sticky="nsew")
+        search_button.grid(row=2, column=0, pady=(5, 0), sticky="nsew")
         # endregion
 
         # 검색 결과 프레임을 정의합니다.
@@ -77,81 +78,83 @@ class Core:
 
         # region 날씨 프레임을 정의합니다.
         weather_frame = ctk.CTkFrame(master=self.__app, width=250)
-        weather_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 20), rowspan=1, sticky="nsew")
-        weather_frame.grid_rowconfigure(1, minsize=30)
-        weather_frame.grid_rowconfigure(3, minsize=150)
-        weather_frame.grid_rowconfigure(5, weight=1)
+        weather_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 20), sticky="nsew")
+        # weather_frame.grid_rowconfigure(1, minsize=30)
+        # weather_frame.grid_rowconfigure(3, minsize=150)
+        weather_frame.grid_rowconfigure(2, weight=1)
+
+        date_frame = ctk.CTkFrame(master=weather_frame)
+        date_frame.grid(row=0, column=0, sticky="nsew")
 
         years = [str(2000 + i) for i in range(23, -1, -1)]
-        self.__year_entry = ctk.CTkOptionMenu(weather_frame,
+        self.__year_entry = ctk.CTkOptionMenu(date_frame,
                                               values=years,
                                               font=self.__basic_font,
-                                              width=100,
+                                              width=65,
                                               height=20,
                                               dropdown_font=self.__basic_font,
-                                              corner_radius=0,
-                                              command=self.__on_date_changed)
+                                              corner_radius=0)
         self.__year_entry.grid(row=0, column=0, stick="nsew")
 
         months = [str(i) for i in range(1, 13)]
-        self.__month_entry = ctk.CTkOptionMenu(weather_frame,
+        self.__month_entry = ctk.CTkOptionMenu(date_frame,
                                                values=months,
                                                font=self.__basic_font,
-                                               width=100,
+                                               width=65,
                                                height=20,
                                                dropdown_font=self.__basic_font,
-                                               corner_radius=0,
-                                               command=self.__on_date_changed)
+                                               corner_radius=0)
         self.__month_entry.grid(row=0, column=1, stick="nsew")
 
         days = [str(i) for i in range(1, 32)]
-        self.__day_entry = ctk.CTkOptionMenu(weather_frame,
+        self.__day_entry = ctk.CTkOptionMenu(date_frame,
                                              values=days,
                                              font=self.__basic_font,
-                                             width=100,
+                                             width=65,
                                              height=20,
                                              dropdown_font=self.__basic_font,
-                                             corner_radius=0,
-                                             command=self.__on_date_changed)
+                                             corner_radius=0)
         self.__day_entry.grid(row=0, column=2, stick="nsew")
 
-        self.__date_search_button = ctk.CTkButton(master=weather_frame,
+        self.__time_entry = ctk.CTkOptionMenu(date_frame,
+                                              values=["13:00"],
+                                              font=self.__basic_font,
+                                              width=65,
+                                              height=20,
+                                              dropdown_font=self.__basic_font,
+                                              corner_radius=0)
+        self.__time_entry.grid(row=0, column=3, stick="nsew")
+
+        self.__date_search_button = ctk.CTkButton(master=date_frame,
                                                   font=self.__basic_font,
-                                                  text="검색",
-                                                  width=15,
+                                                  text="날짜 선택",
+                                                  width=65,
                                                   height=20,
-                                                  corner_radius=0)
-        self.__date_search_button.grid(row=0, column=3, stick="nsew")
+                                                  corner_radius=0,
+                                                  command=self.__on_weather_selected)
+        self.__date_search_button.grid(row=0, column=4, stick="nsew")
 
-        temperature_label = ctk.CTkLabel(master=weather_frame,
-                                         font=self.__basic_font,
-                                         text="기온")
-        temperature_label.grid(row=2, column=0, stick="nsew")
+        weather_info_frame = ctk.CTkFrame(master=weather_frame, fg_color="transparent")
+        weather_info_frame.grid(row=1, column=0, pady=(20, 0), sticky="nsew")
+        weather_info_frame.grid_rowconfigure(1, minsize=200)
 
-        wind_direction_label = ctk.CTkLabel(master=weather_frame,
-                                            font=self.__basic_font,
-                                            text="풍향")
-        wind_direction_label.grid(row=2, column=1, stick="nsew")
+        temperature_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="기온")
+        temperature_label.grid(row=0, column=0, padx=(20, 0), stick="nsw")
 
-        wind_speed_label = ctk.CTkLabel(master=weather_frame,
-                                        font=self.__basic_font,
-                                        text="풍속")
-        wind_speed_label.grid(row=2, column=2, stick="nsew")
+        wind_direction_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="풍향")
+        wind_direction_label.grid(row=0, column=1, padx=(100, 0), stick="nsew")
 
-        sky_state_label = ctk.CTkLabel(master=weather_frame,
-                                       font=self.__basic_font,
-                                       text="하늘상태")
-        sky_state_label.grid(row=4, column=0, stick="nsew")
+        wind_speed_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="풍속")
+        wind_speed_label.grid(row=0, column=2, padx=(90, 0), stick="nsew")
 
-        humidity_label = ctk.CTkLabel(master=weather_frame,
-                                      font=self.__basic_font,
-                                      text="습도")
-        humidity_label.grid(row=4, column=1, stick='nsew')
+        sky_state_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="하늘상태")
+        sky_state_label.grid(row=2, column=0, padx=(10, 0), stick="nsew")
 
-        rainfall_probability = ctk.CTkLabel(master=weather_frame,
-                                            font=self.__basic_font,
-                                            text="강수확률")
-        rainfall_probability.grid(row=4, column=2, stick='nsew')
+        humidity_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="습도")
+        humidity_label.grid(row=2, column=1, padx=(100, 0), stick='nsew')
+
+        rainfall_probability = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="강수확률")
+        rainfall_probability.grid(row=2, column=2, padx=(80, 0), stick='nsew')
 
         weather_details_button = ctk.CTkButton(weather_frame,
                                                font=self.__basic_font,
@@ -159,7 +162,7 @@ class Core:
                                                width=10,
                                                height=15,
                                                corner_radius=5)
-        weather_details_button.grid(row=6, column=1, padx=(0, 0), pady=(0, 15))
+        weather_details_button.grid(row=3, column=0, padx=(0, 0), pady=(0, 15))
         # endregion
 
         # region 지도 프레임을 정의합니다
@@ -262,8 +265,8 @@ class Core:
 
         self.__selected_tourist_spot_button_index = selected_button_index
 
-    def __on_date_changed(self, value):
-        pass
+    def __on_weather_selected(self):
+        print("날짜 선택")
 
 
 if __name__ == '__main__':
