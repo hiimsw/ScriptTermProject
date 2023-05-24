@@ -9,15 +9,16 @@ class Core:
         self.__search_frame = None
         self.__search_menu = None
         self.__search_entry = None
-        self.__searched_locations = []
-        self.__selected_location_button_index = 0
+        self.__searched_keyword = []
+        self.__selected_keyword_button_index = 0
         self.__year_entry = None
         self.__month_entry = None
         self.__day_entry = None
         self.__date_search_button = None
         self.__search_result_frame = None
         self.__recommand_course_frame = None
-        self.__recommand_tourist_spot_labels = []
+        self.__recommand_tourist_spot_buttons = []
+        self.__selected_tourist_spot_button_index = 0
 
         self.__cw_loader = CourseWeatherLoader()
 
@@ -184,14 +185,14 @@ class Core:
 
         search_type = self.__search_menu.get()
 
-        for label in self.__recommand_tourist_spot_labels:
-            label.destroy()
-        self.__recommand_tourist_spot_labels.clear()
+        for button in self.__recommand_tourist_spot_buttons:
+            button.destroy()
+        self.__recommand_tourist_spot_buttons.clear()
 
         if search_type == '지역명':
-            for button in self.__searched_locations:
+            for button in self.__searched_keyword:
                 button.destroy()
-            self.__searched_locations.clear()
+            self.__searched_keyword.clear()
 
             # 스크롤 뷰 상태를 초기화하기 위해 검색 결과 프레임을 재생성합니다.
             self.__search_result_frame.destroy()
@@ -206,9 +207,9 @@ class Core:
                                        text_color="black",
                                        text_color_disabled="black",
                                        corner_radius=0,
-                                       command=lambda x=i, y=tourist_spot[0]: self.__on_location_selected(x, y))
+                                       command=lambda x=i, y=tourist_spot[0]: self.__on_keyword_selected(x, y))
                 button.grid(row=i, column=0, padx=(5, 0))
-                self.__searched_locations.append(button)
+                self.__searched_keyword.append(button)
         elif search_type == '관광지명':
             pass
         elif search_type == "시군구":
@@ -216,30 +217,52 @@ class Core:
         else:
             assert False, "지원하지 않는 검색 유형입니다."
 
-        self.__selected_location_button_index = 0
+        self.__selected_keyword_button_index = 0
 
-    def __on_location_selected(self, button_index, course_id):
-        prev_button = self.__searched_locations[self.__selected_location_button_index]
+    def __on_keyword_selected(self, selected_button_index, course_id):
+        prev_button = self.__searched_keyword[self.__selected_keyword_button_index]
         prev_button.configure(state="normal", fg_color="transparent")
 
-        button = self.__searched_locations[button_index]
-        button.configure(state="disabled", fg_color=['#3a7ebf', '#1f538d'])
-
-        recommand_course = self.__cw_loader.find_recommand_course(course_id, button.cget("text"))
+        selected_button = self.__searched_keyword[selected_button_index]
+        selected_button.configure(state="disabled", fg_color=['#3a7ebf', '#1f538d'])
+        selected_tourist_spot = selected_button.cget("text")
+        recommand_course = self.__cw_loader.find_recommand_course(course_id, selected_tourist_spot)
         assert len(recommand_course) > 0, "코스를 찾을 수 없습니다."
 
-        for label in self.__recommand_tourist_spot_labels:
-            label.destroy()
-        self.__recommand_tourist_spot_labels.clear()
+        for button in self.__recommand_tourist_spot_buttons:
+            button.destroy()
+        self.__recommand_tourist_spot_buttons.clear()
+        self.__selected_tourist_spot_button_index = 0
 
         for i in range(1, len(recommand_course)):
-            label = ctk.CTkLabel(master=self.__recommand_course_frame,
-                                 font=self.__basic_font,
-                                 text=recommand_course[i])
-            label.grid(row=i, column=0)
-            self.__recommand_tourist_spot_labels.append(label)
+            tourist_spot = recommand_course[i]
+            button_index = i - 1
+            button = ctk.CTkButton(master=self.__recommand_course_frame,
+                                   font=self.__basic_font,
+                                   text=tourist_spot,
+                                   fg_color='transparent',
+                                   text_color="black",
+                                   text_color_disabled="black",
+                                   corner_radius=0,
+                                   command=lambda x=button_index: self.__on_tourist_spot_selected(x))
+            button.grid(row=i, column=0)
+            self.__recommand_tourist_spot_buttons.append(button)
 
-        self.__selected_location_button_index = button_index
+            if tourist_spot == selected_tourist_spot:
+                button.configure(state="disabled", fg_color=['#3a7ebf', '#1f538d'])
+                self.__on_tourist_spot_selected(button_index)
+                self.__selected_tourist_spot_button_index = button_index
+
+        self.__selected_keyword_button_index = selected_button_index
+
+    def __on_tourist_spot_selected(self, selected_button_index):
+        prev_button = self.__recommand_tourist_spot_buttons[self.__selected_tourist_spot_button_index]
+        prev_button.configure(state="normal", fg_color="transparent")
+
+        selected_button = self.__recommand_tourist_spot_buttons[selected_button_index]
+        selected_button.configure(state="disabled", fg_color=['#3a7ebf', '#1f538d'])
+
+        self.__selected_tourist_spot_button_index = selected_button_index
 
     def __on_date_changed(self, value):
         pass
