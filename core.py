@@ -96,7 +96,7 @@ class Core:
                                               corner_radius=0)
         self.__year_entry.grid(row=0, column=0, stick="nsew")
 
-        months = [str(i) for i in range(1, 13)]
+        months = [f"{i:02}" for i in range(1, 13)]
         self.__month_entry = ctk.CTkOptionMenu(date_frame,
                                                values=months,
                                                font=self.__basic_font,
@@ -106,7 +106,7 @@ class Core:
                                                corner_radius=0)
         self.__month_entry.grid(row=0, column=1, stick="nsew")
 
-        days = [str(i) for i in range(1, 32)]
+        days = [f"{i:02}" for i in range(1, 32)]
         self.__day_entry = ctk.CTkOptionMenu(date_frame,
                                              values=days,
                                              font=self.__basic_font,
@@ -116,8 +116,9 @@ class Core:
                                              corner_radius=0)
         self.__day_entry.grid(row=0, column=2, stick="nsew")
 
+        times = [f"{i:02}:00" for i in range(0, 22, 3)]
         self.__time_entry = ctk.CTkOptionMenu(date_frame,
-                                              values=["13:00"],
+                                              values=times,
                                               font=self.__basic_font,
                                               width=65,
                                               height=20,
@@ -266,7 +267,12 @@ class Core:
         self.__selected_tourist_spot_button_index = selected_button_index
 
     def __on_weather_selected(self):
-        print("날짜 선택")
+        year = self.__year_entry.get()
+        month = self.__month_entry.get()
+        day = self.__day_entry.get()
+        time = self.__time_entry.get().split(':')[0]
+        date = year + month + day + time
+        print(date)
 
 
 if __name__ == '__main__':
