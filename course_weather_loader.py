@@ -1,3 +1,4 @@
+import re
 import requests
 import xml.etree.ElementTree as ET
 
@@ -35,38 +36,45 @@ class CourseWeatherLoader:
         tourist_spots = self.__courses[course_id]
         return tourist_spots[:]
 
-    def run(self):
-        pass
+    def search_weather(self, course_id, tourist_spot, date):
+        url = 'https://apis.data.go.kr/1360000/TourStnInfoService1/getTourStnVilageFcst1'
+        service_key = "e/rfOsl+wjVcIDYyMVTu3nk5mQgunZXDeAEfr2gvG8+xq/VGPFSUThoVw1YJmmLy2wzC7OUCqQyt3MoUZicA/Q=="
+        page_no = 1
+        num_of_rows = 100
+        hour = 0
 
-        # url = 'https://apis.data.go.kr/1360000/TourStnInfoService1/getTourStnVilageFcst1'
-        # service_key = "e/rfOsl+wjVcIDYyMVTu3nk5mQgunZXDeAEfr2gvG8+xq/VGPFSUThoVw1YJmmLy2wzC7OUCqQyt3MoUZicA/Q=="
-        # page_no = 1
-        # num_of_rows = 10
-        # current_date = 2023051800
-        # hour = 0
-        # course_id = 1
-        #
-        # query_params = {"ServiceKey": service_key,
-        #                 "pageNo": page_no,
-        #                 "numOfRows": num_of_rows,
-        #                 "CURRENT_DATE": current_date,
-        #                 "HOUR": hour,
-        #                 "COURSE_ID": course_id}
-        #
-        # response = requests.get(url, params=query_params)
-        # print(response.text)
-        #
-        # root = ET.fromstring(response.text)
-        #
-        # elements = root.find("body").find("items")
-        # for e in elements:
-        #     th3 = e.findtext("th3")
-        #     wd = e.findtext("wd")  # 풍향(deg)
-        #     ws = e.findtext("ws")  # 풍속(m/s)
-        #     sky = e.findtext("sky")  # 하늘상태(1:맑음, 3:구름많음, 4:흐림)
-        #     rhm = e.findtext("rhm")  # 습도(%)
-        #     pop = e.findtext("pop")  # 강수 확률(%)
+        query_params = {"ServiceKey": service_key,
+                        "pageNo": page_no,
+                        "numOfRows": num_of_rows,
+                        "CURRENT_DATE": date[:-2] + "00",  # 정보 조회를 위해 날짜를 조정합니다.
+                        "HOUR": hour,
+                        "COURSE_ID": course_id}
+
+        response = requests.get(url, params=query_params)
+        root = ET.fromstring(response.text)
+
+        searched_weather = {}
+
+        elements = root.find("body").find("items")
+        for e in elements:
+            if tourist_spot != e.findtext("spotName"):
+                continue
+
+            tm = re.split(r"[-: ]", e.findtext("tm"))  # 시간
+            tm = "".join(tm[:-1])
+            if tm != date:
+                continue
+
+            th3 = e.findtext("th3")  # 기온
+            wd = e.findtext("wd")  # 풍향(deg)
+            ws = e.findtext("ws")  # 풍속(m/s)
+            sky = e.findtext("sky")  # 하늘상태(1:맑음, 3:구름많음, 4:흐림)
+            rhm = e.findtext("rhm")  # 습도(%)
+            pop = e.findtext("pop")  # 강수 확률(%)
+            searched_weather.update({"th3": th3, "wd": wd, "ws": ws, "sky": sky, "rhm": rhm, "pop": pop})
+
+            return searched_weather
 
 if __name__ == '__main__':
     cwl = CourseWeatherLoader()
-    cwl.run()
+    cwl.search_weather(123, "(포항)호미곶해맞이광장/국립등대박물관", "2023052403")
