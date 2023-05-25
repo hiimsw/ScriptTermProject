@@ -25,6 +25,21 @@ class CourseWeatherLoader:
             for tourist_spot in tourist_spots:
                 self.__courses[course_id].append(tourist_spot.text)
 
+    def find_tourist_spots(self, spot_keyword):
+        found_tourist_spots = []
+
+        courses = list(self.__courses.items())
+        for course in courses:
+            course: tuple = tuple(course)
+            tourist_spots = course[1]
+            for i in range(1, len(tourist_spots)):
+                tourist_spot = tourist_spots[i]
+                tourist_spot = tourist_spot[tourist_spot.find(')') + 1:]  # 지역명을 제외합니다. ex) (포항)호미곶 -> 호미곶
+                if spot_keyword in tourist_spot:
+                    found_tourist_spots.append((course[0], tourist_spots[i]))
+
+        return found_tourist_spots
+
     def find_tourist_spots_by_local_name(self, local_name):
         found_tourist_spots = []
 

@@ -58,7 +58,7 @@ class Core:
         self.__search_frame.grid_rowconfigure(4, weight=1)
 
         self.__search_menu = ctk.CTkOptionMenu(self.__search_frame,
-                                               values=["지역명", "관광지명", "시군구"],
+                                               values=["지역명", "관광지명"],
                                                font=self.__basic_font,
                                                height=20,
                                                dropdown_font=self.__basic_font,
@@ -248,33 +248,32 @@ class Core:
             button.destroy()
         self.__recommand_tourist_spot_buttons.clear()
 
+        for button in self.__searched_keyword:
+            button.destroy()
+        self.__searched_keyword.clear()
+
+        # 스크롤 뷰 상태를 초기화하기 위해 검색 결과 프레임을 재생성합니다.
+        self.__search_result_frame.destroy()
+        self.__create_search_result_frame()
+
         if search_type == '지역명':
-            for button in self.__searched_keyword:
-                button.destroy()
-            self.__searched_keyword.clear()
-
-            # 스크롤 뷰 상태를 초기화하기 위해 검색 결과 프레임을 재생성합니다.
-            self.__search_result_frame.destroy()
-            self.__create_search_result_frame()
-
             tourist_spots = self.__cw_loader.find_tourist_spots_by_local_name(search_keyword)
-            for i, tourist_spot in enumerate(tourist_spots):
-                button = ctk.CTkButton(master=self.__search_result_frame,
-                                       font=self.__basic_font,
-                                       text=tourist_spot[1],
-                                       fg_color='transparent',
-                                       text_color="black",
-                                       text_color_disabled="black",
-                                       corner_radius=0,
-                                       command=lambda x=i, y=tourist_spot[0]: self.__on_keyword_selected(x, y))
-                button.grid(row=i, column=0, padx=(5, 0))
-                self.__searched_keyword.append(button)
         elif search_type == '관광지명':
-            pass
-        elif search_type == "시군구":
-            pass
+            tourist_spots = self.__cw_loader.find_tourist_spots(search_keyword)
         else:
             assert False, "지원하지 않는 검색 유형입니다."
+
+        for i, tourist_spot in enumerate(tourist_spots):
+            button = ctk.CTkButton(master=self.__search_result_frame,
+                                   font=self.__basic_font,
+                                   text=tourist_spot[1],
+                                   fg_color='transparent',
+                                   text_color="black",
+                                   text_color_disabled="black",
+                                   corner_radius=0,
+                                   command=lambda x=i, y=tourist_spot[0]: self.__on_keyword_selected(x, y))
+            button.grid(row=i, column=0, padx=(5, 0))
+            self.__searched_keyword.append(button)
 
         self.__selected_keyword_button_index = 0
 
