@@ -13,6 +13,7 @@ class CourseWeatherLoader:
 
         key_file = open("api_keys/data_key")
         self.__service_key = key_file.readline()
+        key_file.close()
 
         course_root = ET.parse("course.xml")
         for item in course_root.iter("item"):
