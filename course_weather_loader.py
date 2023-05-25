@@ -6,11 +6,13 @@ import xml.etree.ElementTree as ET
 
 class CourseWeatherLoader:
     URL: Final = 'https://apis.data.go.kr/1360000/TourStnInfoService1/getTourStnVilageFcst1'
-    SERVICE_KEY: Final = "e/rfOsl+wjVcIDYyMVTu3nk5mQgunZXDeAEfr2gvG8+xq/VGPFSUThoVw1YJmmLy2wzC7OUCqQyt3MoUZicA/Q=="
     NUM_OF_ROWS: Final = 100
 
     def __init__(self):
         self.__courses = {}
+
+        key_file = open("api_keys/data_key")
+        self.__service_key = key_file.readline()
 
         course_root = ET.parse("course.xml")
         for item in course_root.iter("item"):
@@ -46,7 +48,7 @@ class CourseWeatherLoader:
         total_page_count = 0
         page_no = 1
 
-        query_params = {"ServiceKey": self.SERVICE_KEY,
+        query_params = {"ServiceKey": self.__service_key,
                         "pageNo": page_no,
                         "numOfRows": self.NUM_OF_ROWS,
                         "CURRENT_DATE": date[:-2] + "00",  # 정보 조회를 위해 날짜를 조정합니다.
