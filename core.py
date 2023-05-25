@@ -3,6 +3,7 @@ import customtkinter as ctk
 from course_weather_loader import CourseWeatherLoader
 from map_loader import MapLoader
 from PIL import Image
+from weather_details_viewer import WeatherDeatilasViewer
 
 
 class Core:
@@ -215,7 +216,8 @@ class Core:
                                                text="상세보기",
                                                width=10,
                                                height=15,
-                                               corner_radius=5)
+                                               corner_radius=5,
+                                               command=self.__open_weather_details_viewer)
         weather_details_button.grid(row=3, column=0, padx=(0, 0), pady=(0, 15))
         # endregion
 
@@ -359,6 +361,8 @@ class Core:
             # HACK: 텍스트로 표시하자.
             print("지정한 지역과 날짜에 대해 날씨 정보가 조회되지 않습니다.")
 
+    def __open_weather_details_viewer(self):
+        WeatherDeatilasViewer(self.__app, closing_event=None)
 
 if __name__ == '__main__':
     core = Core()
