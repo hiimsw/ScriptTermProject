@@ -1,8 +1,8 @@
 import tkinter as tk
-import tkinter.ttk as ttk
 import customtkinter as ctk
 from course_weather_loader import CourseWeatherLoader
 from map_loader import MapLoader
+from PIL import Image
 
 
 class Core:
@@ -24,6 +24,12 @@ class Core:
         self.__recommand_course_frame = None
         self.__recommand_tourist_spot_buttons = []
         self.__selected_tourist_spot_button_index = 0
+        self.__temperature_label = None
+        self.__wind_direction_label = None
+        self.__wind_speed_label = None
+        self.__sky_state_label = None
+        self.__humidity_label = None
+        self.__rainfall_probability = None
 
         self.__selected_tourist_spot_course_id = 0
         self.__cw_loader = None
@@ -142,25 +148,67 @@ class Core:
 
         weather_info_frame = ctk.CTkFrame(master=weather_frame, fg_color="transparent")
         weather_info_frame.grid(row=1, column=0, pady=(20, 0), sticky="nsew")
-        weather_info_frame.grid_rowconfigure(1, minsize=200)
+        weather_info_frame.grid_rowconfigure(3, minsize=100)
 
         temperature_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="기온")
-        temperature_label.grid(row=0, column=0, padx=(20, 0), stick="nsw")
+        temperature_label.grid(row=0, column=0, padx=(10, 0), stick="nsew")
 
         wind_direction_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="풍향")
-        wind_direction_label.grid(row=0, column=1, padx=(100, 0), stick="nsew")
+        wind_direction_label.grid(row=0, column=1, padx=(80, 0), stick="nsew")
 
         wind_speed_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="풍속")
         wind_speed_label.grid(row=0, column=2, padx=(90, 0), stick="nsew")
 
         sky_state_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="하늘상태")
-        sky_state_label.grid(row=2, column=0, padx=(10, 0), stick="nsew")
+        sky_state_label.grid(row=4, column=0, padx=(10, 0), stick="nsew")
 
         humidity_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="습도")
-        humidity_label.grid(row=2, column=1, padx=(100, 0), stick='nsew')
+        humidity_label.grid(row=4, column=1, padx=(80, 0), stick='nsew')
 
         rainfall_probability = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="강수확률")
-        rainfall_probability.grid(row=2, column=2, padx=(80, 0), stick='nsew')
+        rainfall_probability.grid(row=4, column=2, padx=(80, 0), stick='nsew')
+
+        image_0 = ctk.CTkImage(Image.open("assets/0.png"), size=(15, 36))
+        image_0_label = ctk.CTkLabel(master=weather_info_frame, text='', image=image_0)
+        image_0_label.grid(row=1, column=0, padx=(10, 0), stick='nsew')
+
+        image_1 = ctk.CTkImage(Image.open("assets/1.png"), size=(39, 18))
+        image_1_label = ctk.CTkLabel(master=weather_info_frame, text='', image=image_1)
+        image_1_label.grid(row=1, column=1, padx=(80, 0), stick='nsew')
+
+        image_2 = ctk.CTkImage(Image.open("assets/2.png"), size=(34, 32))
+        image_2_label = ctk.CTkLabel(master=weather_info_frame, text='', image=image_2)
+        image_2_label.grid(row=1, column=2, padx=(87, 0), stick='nsew')
+
+        image_3 = ctk.CTkImage(Image.open("assets/3.png"), size=(45, 45))
+        image_3_label = ctk.CTkLabel(master=weather_info_frame, text='', image=image_3)
+        image_3_label.grid(row=5, column=0, padx=(10, 0), stick='nsew')
+
+        image_4 = ctk.CTkImage(Image.open("assets/4.png"), size=(15, 22))
+        image_4_label = ctk.CTkLabel(master=weather_info_frame, text='', image=image_4)
+        image_4_label.grid(row=5, column=1, padx=(83, 0), stick='nsew')
+
+        image_5 = ctk.CTkImage(Image.open("assets/5.png"), size=(34, 36))
+        image_5_label = ctk.CTkLabel(master=weather_info_frame, text='', image=image_5)
+        image_5_label.grid(row=5, column=2, padx=(87, 0), stick='nsew')
+
+        self.__temperature_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="-")
+        self.__temperature_label.grid(row=2, column=0, padx=(13, 0), stick="nsew")
+
+        self.__wind_direction_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="-")
+        self.__wind_direction_label.grid(row=2, column=1, padx=(81, 0), stick="nsew")
+
+        self.__wind_speed_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="-")
+        self.__wind_speed_label.grid(row=2, column=2, padx=(87, 0), stick="nsew")
+
+        self.__sky_state_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="-")
+        self.__sky_state_label.grid(row=6, column=0, padx=(9, 0), stick="nsew")
+
+        self.__humidity_label = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="-")
+        self.__humidity_label.grid(row=6, column=1, padx=(85, 0), stick='nsew')
+
+        self.__rainfall_probability = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="-")
+        self.__rainfall_probability.grid(row=6, column=2, padx=(87, 0), stick='nsew')
 
         weather_details_button = ctk.CTkButton(weather_frame,
                                                font=self.__basic_font,
@@ -293,11 +341,23 @@ class Core:
                                                            tourist_spot,
                                                            date)
 
-        if searched_weather is not None:
-            print(searched_weather)
+        if searched_weather:
+            self.__temperature_label.configure(text=searched_weather['th3'] + '%')
+            self.__wind_direction_label.configure(text=searched_weather['wd'] + '°')
+            self.__wind_speed_label.configure(text=searched_weather['ws'] + 'm/s')
+            self.__humidity_label.configure(text=searched_weather['rhm'] + '%')
+            self.__rainfall_probability.configure(text=searched_weather['pop'] + '%')
+
+            sky = int(searched_weather['sky'])
+            if sky == 1:
+                self.__sky_state_label.configure(text='맑음')
+            elif sky == 3:
+                self.__sky_state_label.configure(text='구름 많음')
+            elif sky == 4:
+                self.__sky_state_label.configure(text='흐림')
         else:
             # HACK: 텍스트로 표시하자.
-            print("지정한 지역과 날짜에 대한 날씨 정보가 조회되지 않습니다.")
+            print("지정한 지역과 날짜에 대해 날씨 정보가 조회되지 않습니다.")
 
 
 if __name__ == '__main__':
