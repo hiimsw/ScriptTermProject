@@ -42,7 +42,7 @@ class MapLoader:
 
         cef.Initialize()
         window_info = cef.WindowInfo(frame.winfo_id())
-        window_info.SetAsChild(frame.winfo_id(), [0, 0, 300, 200])
+        window_info.SetAsChild(frame.winfo_id(), [0, 0, frame.cget("width"), frame.cget("height")])
         self.__browser = cef.CreateBrowserSync(window_info, url='file:///' + self.CAHCING_MAP_HTML_PATH)
 
         cef.MessageLoop()

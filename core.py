@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.ttk as ttk
 import customtkinter as ctk
 from course_weather_loader import CourseWeatherLoader
 from map_loader import MapLoader
@@ -171,8 +172,8 @@ class Core:
         # endregion
 
         # region 지도 프레임을 정의합니다
-        map_frame = tk.Frame(master=self.__app, width=300, height=450)
-        map_frame.grid(row=0, column=2, padx=(10, 0), pady=(150, 0), sticky="ew")
+        map_frame = tk.Frame(master=self.__app, width=300, height=200, bg='#E5E5E5')
+        map_frame.grid(row=0, column=2, padx=(10, 0), sticky="ew")
         map_frame.grid_rowconfigure(0, weight=1)
 
         self.__map_loader = MapLoader(map_frame)
