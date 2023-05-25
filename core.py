@@ -1,5 +1,7 @@
+import tkinter as tk
 import customtkinter as ctk
 from course_weather_loader import CourseWeatherLoader
+from map_loader import MapLoader
 
 
 class Core:
@@ -9,6 +11,7 @@ class Core:
         self.__search_frame = None
         self.__search_menu = None
         self.__search_entry = None
+        self.__search_button = None
         self.__searched_keyword = []
         self.__selected_keyword_button_index = 0
         self.__year_entry = None
@@ -22,9 +25,11 @@ class Core:
         self.__selected_tourist_spot_button_index = 0
 
         self.__selected_tourist_spot_course_id = 0
-        self.__cw_loader = CourseWeatherLoader()
+        self.__cw_loader = None
+        self.__map_loader = None
 
     def run(self):
+        self.__cw_loader = CourseWeatherLoader()
         self.__initialize_gui()
         self.__app.mainloop()
 
@@ -55,14 +60,14 @@ class Core:
         self.__search_entry = ctk.CTkEntry(self.__search_frame, font=self.__basic_font, corner_radius=0)
         self.__search_entry.grid(row=1, column=0, padx=(0, 0), pady=(5, 0), sticky="nsew")
 
-        search_button = ctk.CTkButton(self.__search_frame,
-                                      font=self.__basic_font,
-                                      text="키워드 검색",
-                                      width=30,
-                                      height=20,
-                                      corner_radius=0,
-                                      command=self.__on_keyword_searched)
-        search_button.grid(row=2, column=0, pady=(5, 0), sticky="nsew")
+        self.__search_button = ctk.CTkButton(self.__search_frame,
+                                             font=self.__basic_font,
+                                             text="키워드 검색",
+                                             width=30,
+                                             height=20,
+                                             corner_radius=0,
+                                             command=self.__on_keyword_searched)
+        self.__search_button.grid(row=2, column=0, pady=(5, 0), sticky="nsew")
         # endregion
 
         # 검색 결과 프레임을 정의합니다.
@@ -80,8 +85,6 @@ class Core:
         # region 날씨 프레임을 정의합니다.
         weather_frame = ctk.CTkFrame(master=self.__app, width=250)
         weather_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 20), sticky="nsew")
-        # weather_frame.grid_rowconfigure(1, minsize=30)
-        # weather_frame.grid_rowconfigure(3, minsize=150)
         weather_frame.grid_rowconfigure(2, weight=1)
 
         date_frame = ctk.CTkFrame(master=weather_frame)
@@ -168,10 +171,11 @@ class Core:
         # endregion
 
         # region 지도 프레임을 정의합니다
-        map_frame = ctk.CTkFrame(master=self.__app,
-                                 width=300)
-        map_frame.grid(row=0, column=2, padx=(10, 0), pady=(100, 100), sticky="nsew")
+        map_frame = tk.Frame(master=self.__app, width=300, height=450)
+        map_frame.grid(row=0, column=2, padx=(10, 0), pady=(150, 0), sticky="ew")
         map_frame.grid_rowconfigure(0, weight=1)
+
+        self.__map_loader = MapLoader(map_frame)
         # endregion
 
     def __create_search_result_frame(self):
@@ -266,6 +270,12 @@ class Core:
         selected_button = self.__recommand_tourist_spot_buttons[selected_button_index]
         selected_button.configure(state="disabled", fg_color=['#3a7ebf', '#1f538d'])
 
+        lat_lng = self.__map_loader.find_lat_lng(selected_button.cget("text"))
+        if lat_lng:
+            self.__map_loader.load_map(lat_lng)
+        else:
+            print("해당 관광지의 좌표를 알 수 없습니다.")
+
         self.__selected_tourist_spot_button_index = selected_button_index
 
     def __on_weather_selected(self):
@@ -281,7 +291,13 @@ class Core:
         searched_weather = self.__cw_loader.search_weather(self.__selected_tourist_spot_course_id,
                                                            tourist_spot,
                                                            date)
-        print(searched_weather)
+
+        if searched_weather is not None:
+            print(searched_weather)
+        else:
+            # HACK: 텍스트로 표시하자.
+            print("지정한 지역과 날짜에 대한 날씨 정보가 조회되지 않습니다.")
+
 
 if __name__ == '__main__':
     core = Core()
