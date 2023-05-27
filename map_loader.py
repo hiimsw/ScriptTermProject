@@ -46,4 +46,3 @@ class MapLoader:
         self.__browser = cef.CreateBrowserSync(window_info, url='file:///' + self.CAHCING_MAP_HTML_PATH)
 
         cef.MessageLoop()
-

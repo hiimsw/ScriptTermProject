@@ -9,6 +9,9 @@ from weather_details_viewer import WeatherDeatilasViewer
 class Core:
     def __init__(self):
         self.__app = None
+        self.__current_frame = None
+        self.__main_frame = None
+        self.__option_frame = None
         self.__basic_font = None
         self.__search_frame = None
         self.__search_menu = None
@@ -48,12 +51,19 @@ class Core:
         self.__app = ctk.CTk()
         self.__app.geometry("890x550")
         self.__app.title("Travel & Weather")
-        self.__app.grid_rowconfigure(0, weight=1)
-
         self.__basic_font = ctk.CTkFont(family="맑은 고딕", size=12)
 
+        self.__initialize_main_frame()
+        self.__initialize_option_frame()
+        self.__current_frame = self.__main_frame
+
+    def __initialize_main_frame(self):
+        self.__main_frame = ctk.CTkFrame(master=self.__app, fg_color="transparent")
+        self.__main_frame.grid_rowconfigure(0, weight=1)
+        self.__main_frame.pack(fill="both", expand=True)
+
         # region 검색 프레임을 정의합니다.
-        self.__search_frame = ctk.CTkFrame(master=self.__app, fg_color='transparent', corner_radius=0)
+        self.__search_frame = ctk.CTkFrame(master=self.__main_frame, fg_color='transparent', corner_radius=0)
         self.__search_frame.grid(row=0, column=0, padx=(10, 0), pady=(20, 20), rowspan=6, sticky="nsew")
         self.__search_frame.grid_rowconfigure(4, weight=1)
 
@@ -91,7 +101,7 @@ class Core:
         # endregion
 
         # region 날씨 프레임을 정의합니다.
-        weather_frame = ctk.CTkFrame(master=self.__app, width=250)
+        weather_frame = ctk.CTkFrame(master=self.__main_frame, width=250)
         weather_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 20), sticky="nsew")
         weather_frame.grid_rowconfigure(2, weight=1)
 
@@ -222,11 +232,40 @@ class Core:
         # endregion
 
         # region 지도 프레임을 정의합니다
-        map_frame = tk.Frame(master=self.__app, width=300, height=200, bg='#E5E5E5')
+        map_frame = tk.Frame(master=self.__main_frame, width=300, height=200, bg='#E5E5E5')
         map_frame.grid(row=0, column=2, padx=(10, 0), sticky="ew")
         map_frame.grid_rowconfigure(0, weight=1)
-
         self.__map_loader = MapLoader(map_frame)
+        # endregion
+
+        # region 옵션 버튼을 정의합니다.
+        configuration_image = ctk.CTkImage(Image.open("assets/configure.png"), size=(24, 24))
+        configuration_button = ctk.CTkButton(master=self.__main_frame,
+                                             text='',
+                                             image=configuration_image,
+                                             width=24,
+                                             fg_color='transparent',
+                                             hover_color='#E5E5E5',
+                                             command=self.__change_frame)
+        configuration_button.place(relx=0.95, rely=0.93)
+        # endregion
+
+    def __initialize_option_frame(self):
+        self.__option_frame = ctk.CTkFrame(master=self.__app, fg_color="transparent")
+        self.__option_frame.grid_rowconfigure(0, weight=1)
+        self.__option_frame.pack(fill="both", expand=True)
+        self.__option_frame.pack_forget()
+
+        # region 돌아가기 버튼을 정의합니다.
+        return_image = ctk.CTkImage(Image.open("assets/return.png"), size=(24, 24))
+        return_button = ctk.CTkButton(master=self.__option_frame,
+                                      text='',
+                                      image=return_image,
+                                      width=24,
+                                      fg_color='transparent',
+                                      hover_color='#E5E5E5',
+                                      command=self.__change_frame)
+        return_button.place(relx=0.95, rely=0.929)
         # endregion
 
     def __create_search_result_frame(self):
@@ -361,7 +400,18 @@ class Core:
             print("지정한 지역과 날짜에 대해 날씨 정보가 조회되지 않습니다.")
 
     def __open_weather_details_viewer(self):
-        WeatherDeatilasViewer(self.__app, closing_event=None)
+        WeatherDeatilasViewer(self.__main_frame, closing_event=None)
+
+    def __change_frame(self):
+        self.__current_frame.pack_forget()
+
+        if self.__current_frame == self.__main_frame:
+            self.__current_frame = self.__option_frame
+        else:
+            self.__current_frame = self.__main_frame
+
+        self.__current_frame.pack(fill="both", expand=True)
+
 
 if __name__ == '__main__':
     core = Core()
