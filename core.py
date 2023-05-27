@@ -1,4 +1,6 @@
 import tkinter as tk
+from typing import Final
+
 import customtkinter as ctk
 from course_weather_loader import CourseWeatherLoader
 from map_loader import MapLoader
@@ -252,9 +254,53 @@ class Core:
 
     def __initialize_option_frame(self):
         self.__option_frame = ctk.CTkFrame(master=self.__app, fg_color="transparent")
-        self.__option_frame.grid_rowconfigure(0, weight=1)
-        self.__option_frame.pack(fill="both", expand=True)
-        self.__option_frame.pack_forget()
+        self.__option_frame.grid_columnconfigure(0, weight=1)
+        self.__option_frame.grid_columnconfigure(2, weight=1)
+
+        # region 키 입력 프레임을 정의합니다.
+        api_key_input_frame = ctk.CTkFrame(master=self.__option_frame, fg_color="transparent")
+        api_key_input_frame.grid(row=0, column=1, pady=(200, 0), sticky="nsew")
+
+        google_api_key_label = ctk.CTkLabel(master=api_key_input_frame,
+                                            font=self.__basic_font,
+                                            text_color='#FF2020',
+                                            text="GOOGLE_KEY")
+        google_api_key_label.grid(row=0, column=0)
+
+        google_api_key_entry = ctk.CTkEntry(master=api_key_input_frame,
+                                            font=self.__basic_font,
+                                            width=500,
+                                            corner_radius=0)
+        google_api_key_entry.grid(row=0, column=1, padx=(10, 0), sticky="nsew")
+
+        google_api_key_button = ctk.CTkButton(api_key_input_frame,
+                                              font=self.__basic_font,
+                                              text="입력",
+                                              width=30,
+                                              corner_radius=0,
+                                              command=self.__on_keyword_searched)
+        google_api_key_button.grid(row=0, column=2, padx=(3, 0), sticky="nsew")
+
+        data_api_key_label = ctk.CTkLabel(master=api_key_input_frame,
+                                          font=self.__basic_font,
+                                          text_color='#00AA00',
+                                          text="DATA_KEY")
+        data_api_key_label.grid(row=1, column=0, pady=(10, 0))
+
+        data_api_key_entry = ctk.CTkEntry(master=api_key_input_frame,
+                                          font=self.__basic_font,
+                                          width=500,
+                                          corner_radius=0)
+        data_api_key_entry.grid(row=1, column=1, padx=(10, 0), pady=(10, 0), sticky="nsew")
+
+        data_api_key_button = ctk.CTkButton(api_key_input_frame,
+                                            font=self.__basic_font,
+                                            text="입력",
+                                            width=30,
+                                            corner_radius=0,
+                                            command=self.__on_keyword_searched)
+        data_api_key_button.grid(row=1, column=2, padx=(3, 0), pady=(10, 0), sticky="nsew")
+        # endregion
 
         # region 돌아가기 버튼을 정의합니다.
         return_image = ctk.CTkImage(Image.open("assets/return.png"), size=(24, 24))
