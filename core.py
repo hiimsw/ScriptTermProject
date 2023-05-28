@@ -1,12 +1,9 @@
 import tkinter as tk
-from typing import Final
-
 import customtkinter as ctk
 from course_weather_loader import CourseWeatherLoader
 from map_loader import MapLoader
 from PIL import Image
 from weather_details_viewer import WeatherDeatilasViewer
-
 
 class Core:
     def __init__(self):
@@ -237,7 +234,11 @@ class Core:
         map_frame = tk.Frame(master=self.__main_frame, width=300, height=200, bg='#E5E5E5')
         map_frame.grid(row=0, column=2, padx=(10, 0), sticky="ew")
         map_frame.grid_rowconfigure(0, weight=1)
-        self.__map_loader = MapLoader(map_frame)
+
+        self.__map_loader = MapLoader()
+        if self.__map_loader.connect_api("api_keys/google_key"):
+            self.__map_loader.attach_to_frame(map_frame)
+
         # endregion
 
         # region 옵션 버튼을 정의합니다.
@@ -283,7 +284,6 @@ class Core:
 
         data_api_key_label = ctk.CTkLabel(master=api_key_input_frame,
                                           font=self.__basic_font,
-                                          text_color='#00AA00',
                                           text="DATA_KEY")
         data_api_key_label.grid(row=1, column=0, pady=(10, 0))
 
@@ -407,7 +407,7 @@ class Core:
 
         lat_lng = self.__map_loader.find_lat_lng(selected_button.cget("text"))
         if lat_lng:
-            self.__map_loader.load_map(lat_lng)
+            self.__map_loader.show_map(lat_lng)
         else:
             print("해당 관광지의 좌표를 알 수 없습니다.")
 
