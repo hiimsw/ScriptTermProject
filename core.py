@@ -436,7 +436,9 @@ class Core:
         self.__selected_tourist_spot_button_index = selected_button_index
 
     def __on_weather_selected(self):
-        assert self.__selected_tourist_spot_course_id > 0, "관광지를 선택해 주세요."
+        if self.__selected_tourist_spot_course_id == 0:
+            self.__print_message("관광지가 선택되어 있지 않아 날씨를 조회할 수 없습니다.")
+            return
 
         year = self.__year_entry.get()
         month = self.__month_entry.get()
