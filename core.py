@@ -64,6 +64,7 @@ class Core:
 
         self.__app = ctk.CTk()
         self.__app.geometry("890x550")
+        self.__app.resizable(False, False)
         self.__app.title("Travel & Weather")
         self.__basic_font = ctk.CTkFont(family="맑은 고딕", size=12)
 
