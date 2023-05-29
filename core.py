@@ -345,6 +345,7 @@ class Core:
     def __on_keyword_searched(self):
         search_keyword = self.__search_entry.get()
         if search_keyword == '':
+            self.__print_message("키워드를 입력해 주세요")
             return
 
         search_type = self.__search_menu.get()
@@ -368,17 +369,20 @@ class Core:
         else:
             assert False, "지원하지 않는 검색 유형입니다."
 
-        for i, tourist_spot in enumerate(tourist_spots):
-            button = ctk.CTkButton(master=self.__search_result_frame,
-                                   font=self.__basic_font,
-                                   text=tourist_spot[1],
-                                   fg_color='transparent',
-                                   text_color="black",
-                                   text_color_disabled="black",
-                                   corner_radius=0,
-                                   command=lambda x=i, y=tourist_spot[0]: self.__on_keyword_selected(x, y))
-            button.grid(row=i, column=0, padx=(5, 0))
-            self.__searched_keyword.append(button)
+        if len(tourist_spots) > 0:
+            for i, tourist_spot in enumerate(tourist_spots):
+                button = ctk.CTkButton(master=self.__search_result_frame,
+                                       font=self.__basic_font,
+                                       text=tourist_spot[1],
+                                       fg_color='transparent',
+                                       text_color="black",
+                                       text_color_disabled="black",
+                                       corner_radius=0,
+                                       command=lambda x=i, y=tourist_spot[0]: self.__on_keyword_selected(x, y))
+                button.grid(row=i, column=0, padx=(5, 0))
+                self.__searched_keyword.append(button)
+        else:
+            self.__print_message("검색된 결과가 없습니다.")
 
         self.__selected_keyword_button_index = 0
 
@@ -431,13 +435,13 @@ class Core:
         if lat_lng:
             self.__map_loader.show_map(lat_lng)
         else:
-            self.__print_message("'" + tourist_spot + "'의 좌표를 알 수 없어 지도를 표시할 수 없습니다.")
+            self.__print_message("'" + tourist_spot + "'의 좌표를 알 수 없어 지도가 표시되지 않습니다.", 3500.0)
 
         self.__selected_tourist_spot_button_index = selected_button_index
 
     def __on_weather_selected(self):
         if self.__selected_tourist_spot_course_id == 0:
-            self.__print_message("관광지가 선택되어 있지 않아 날씨를 조회할 수 없습니다.")
+            self.__print_message("관광지가 선택되어 있지 않아 날씨를 조회할 수 없습니다.", 3500.0)
             return
 
         year = self.__year_entry.get()
@@ -466,7 +470,7 @@ class Core:
             elif sky == 4:
                 self.__sky_state_label.configure(text='흐림')
         else:
-            self.__print_message("해당 지역에 지정한 날짜에는 날씨 정보를 조회할 수 없습니다.")
+            self.__print_message("'" + tourist_spot + "'" + "의 해당 날짜에는 날씨를 조회할 수 없습니다.")
 
     def __open_weather_details_viewer(self):
         WeatherDeatilasViewer(self.__main_frame, closing_event=None)
@@ -481,7 +485,7 @@ class Core:
 
         self.__current_frame.pack(fill="both", expand=True)
 
-    def __print_message(self, message, show_delay=3000.0):
+    def __print_message(self, message, show_delay=2000.0):
         self.__message_label.configure(text=message)
         self.__message_label_show_remaining_time = show_delay
 
