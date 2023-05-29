@@ -5,6 +5,7 @@ from map_loader import MapLoader
 from PIL import Image
 from weather_details_viewer import WeatherDeatilasViewer
 
+
 class Core:
     def __init__(self):
         self.__app = None
@@ -33,15 +34,29 @@ class Core:
         self.__sky_state_label = None
         self.__humidity_label = None
         self.__rainfall_probability = None
+        self.__message_label = None
 
         self.__selected_tourist_spot_course_id = 0
         self.__cw_loader = None
         self.__map_loader = None
 
+        self.__message_label_show_remaining_time = 0.0
+
     def run(self):
         self.__cw_loader = CourseWeatherLoader()
         self.__initialize_gui()
+        self.__update()
         self.__app.mainloop()
+
+    def __update(self):
+        if self.__message_label_show_remaining_time > 0.0:
+            self.__message_label_show_remaining_time -= 30
+
+            if self.__message_label_show_remaining_time <= 0.0:
+                self.__message_label_show_remaining_time = 0.0
+                self.__print_message("", 0.0)
+
+        self.__app.after(30, self.__update)
 
     def __initialize_gui(self):
         ctk.set_appearance_mode("light")
@@ -63,7 +78,7 @@ class Core:
 
         # region 검색 프레임을 정의합니다.
         self.__search_frame = ctk.CTkFrame(master=self.__main_frame, fg_color='transparent', corner_radius=0)
-        self.__search_frame.grid(row=0, column=0, padx=(10, 0), pady=(20, 20), rowspan=6, sticky="nsew")
+        self.__search_frame.grid(row=0, column=0, padx=(10, 0), pady=(20, 30), rowspan=6, sticky="nsew")
         self.__search_frame.grid_rowconfigure(4, weight=1)
 
         self.__search_menu = ctk.CTkOptionMenu(self.__search_frame,
@@ -85,12 +100,9 @@ class Core:
                                              corner_radius=0,
                                              command=self.__on_keyword_searched)
         self.__search_button.grid(row=2, column=0, pady=(5, 0), sticky="nsew")
-        # endregion
 
-        # 검색 결과 프레임을 정의합니다.
         self.__create_search_result_frame()
 
-        # region 추천 코스 프레임을 정의합니다.
         self.__recommand_course_frame = ctk.CTkScrollableFrame(master=self.__search_frame,
                                                                label_font=self.__basic_font,
                                                                label_text="추천 코스",
@@ -101,7 +113,7 @@ class Core:
 
         # region 날씨 프레임을 정의합니다.
         weather_frame = ctk.CTkFrame(master=self.__main_frame, width=250)
-        weather_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 20), sticky="nsew")
+        weather_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 30), sticky="nsew")
         weather_frame.grid_rowconfigure(2, weight=1)
 
         date_frame = ctk.CTkFrame(master=weather_frame)
@@ -238,7 +250,6 @@ class Core:
         self.__map_loader = MapLoader()
         if self.__map_loader.connect_api("api_keys/google_key"):
             self.__map_loader.attach_to_frame(map_frame)
-
         # endregion
 
         # region 옵션 버튼을 정의합니다.
@@ -251,6 +262,15 @@ class Core:
                                              hover_color='#E5E5E5',
                                              command=self.__change_frame)
         configuration_button.place(relx=0.95, rely=0.93)
+        # endregion
+
+        # region 하단 상태 메시지 프레임을 정의합니다.
+        self.__message_label = ctk.CTkLabel(master=self.__main_frame,
+                                            font=self.__basic_font,
+                                            fg_color="transparent",
+                                            text_color='#FF2020',
+                                            text="")
+        self.__message_label.place(relx=0.015, rely=0.947)
         # endregion
 
     def __initialize_option_frame(self):
@@ -405,11 +425,13 @@ class Core:
         selected_button = self.__recommand_tourist_spot_buttons[selected_button_index]
         selected_button.configure(state="disabled", fg_color=['#3a7ebf', '#1f538d'])
 
-        lat_lng = self.__map_loader.find_lat_lng(selected_button.cget("text"))
+        tourist_spot = selected_button.cget("text")
+        lat_lng = self.__map_loader.find_lat_lng(tourist_spot)
+
         if lat_lng:
             self.__map_loader.show_map(lat_lng)
         else:
-            print("해당 관광지의 좌표를 알 수 없습니다.")
+            self.__print_message("'" + tourist_spot + "'의 좌표를 알 수 없어 지도를 표시할 수 없습니다.")
 
         self.__selected_tourist_spot_button_index = selected_button_index
 
@@ -442,8 +464,7 @@ class Core:
             elif sky == 4:
                 self.__sky_state_label.configure(text='흐림')
         else:
-            # HACK: 텍스트로 표시하자.
-            print("지정한 지역과 날짜에 대해 날씨 정보가 조회되지 않습니다.")
+            self.__print_message("해당 지역에 지정한 날짜에는 날씨 정보를 조회할 수 없습니다.")
 
     def __open_weather_details_viewer(self):
         WeatherDeatilasViewer(self.__main_frame, closing_event=None)
@@ -458,6 +479,9 @@ class Core:
 
         self.__current_frame.pack(fill="both", expand=True)
 
+    def __print_message(self, message, show_delay=3000.0):
+        self.__message_label.configure(text=message)
+        self.__message_label_show_remaining_time = show_delay
 
 if __name__ == '__main__':
     core = Core()
