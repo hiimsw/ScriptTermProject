@@ -78,3 +78,6 @@ class MapLoader:
         self.__browser = cef.CreateBrowserSync(window_info, url='file:///' + self.CAHCING_MAP_HTML_PATH)
 
         cef.MessageLoop()
+
+    def is_api_connected(self):
+        return self.__maps is not None
