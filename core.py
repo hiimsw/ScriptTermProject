@@ -3,7 +3,6 @@ import customtkinter as ctk
 from course_weather_loader import CourseWeatherLoader, WeatherSearchResult
 from map_loader import MapLoader
 from PIL import Image
-from weather_details_viewer import WeatherDeatilasViewer
 import endecoder as ed
 
 
@@ -252,8 +251,7 @@ class Core:
                                                text="상세보기",
                                                width=10,
                                                height=15,
-                                               corner_radius=5,
-                                               command=self.__open_weather_details_viewer)
+                                               corner_radius=5)
         weather_details_button.grid(row=3, column=0, padx=(0, 0), pady=(0, 15))
         # endregion
 
@@ -508,9 +506,6 @@ class Core:
                 self.__sky_state_label.configure(text='흐림')
         elif search_result == WeatherSearchResult.NOT_FOUND:
             self.__print_message("'" + tourist_spot + "'" + "의 해당 날짜에는 날씨를 조회할 수 없습니다.")
-
-    def __open_weather_details_viewer(self):
-        WeatherDeatilasViewer(self.__main_frame, closing_event=None)
 
     def __change_frame(self):
         self.__current_frame.pack_forget()
