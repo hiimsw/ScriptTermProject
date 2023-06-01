@@ -2,18 +2,19 @@ import re
 from typing import Final
 import requests
 import xml.etree.ElementTree as ET
+from enum import Enum
 
+class WeatherSearchResult(Enum):
+    SUCCESS = 0
+    NOT_FOUND = 1
 
 class CourseWeatherLoader:
     URL: Final = 'https://apis.data.go.kr/1360000/TourStnInfoService1/getTourStnVilageFcst1'
     NUM_OF_ROWS: Final = 100
 
     def __init__(self):
+        self.__key = None
         self.__courses = {}
-
-        key_file = open("api_keys/data_key")
-        self.__service_key = key_file.readline()
-        key_file.close()
 
         course_root = ET.parse("course.xml")
         for item in course_root.iter("item"):
@@ -24,6 +25,20 @@ class CourseWeatherLoader:
             tourist_spots = item.findall("tourist_spot")
             for tourist_spot in tourist_spots:
                 self.__courses[course_id].append(tourist_spot.text)
+
+    def connect_api(self, key):
+        query_params = {"ServiceKey": key,
+                        "pageNo": 1,
+                        "numOfRows": 1,
+                        "CURRENT_DATE": "2023010100",  # 정보 조회를 위해 날짜를 조정합니다.
+                        "HOUR": 0,
+                        "COURSE_ID": 1}
+
+        response = requests.get(self.URL, params=query_params)
+        if not ("SERVICE_KEY_IS_NOT_REGISTERED_ERROR" in response.text):
+            self.__key = key
+
+        return self.is_api_connected()
 
     def find_tourist_spots(self, spot_keyword):
         found_tourist_spots = []
@@ -60,11 +75,13 @@ class CourseWeatherLoader:
         return tourist_spots[:]
 
     def search_weather(self, course_id, tourist_spot, date):
+        assert self.is_api_connected(), "api가 연결되지 않는 상태에서 이 함수를 호출할 수 없습니다."
+
         searched_weather = {}
         total_page_count = 0
         page_no = 1
 
-        query_params = {"ServiceKey": self.__service_key,
+        query_params = {"ServiceKey": self.__key,
                         "pageNo": page_no,
                         "numOfRows": self.NUM_OF_ROWS,
                         "CURRENT_DATE": date[:-2] + "00",  # 정보 조회를 위해 날짜를 조정합니다.
@@ -94,7 +111,7 @@ class CourseWeatherLoader:
                 pop = e.findtext("pop")  # 강수 확률(%)
                 searched_weather.update({"th3": th3, "wd": wd, "ws": ws, "sky": sky, "rhm": rhm, "pop": pop})
 
-                return searched_weather
+                return WeatherSearchResult.SUCCESS, searched_weather
 
             total_page_count += self.NUM_OF_ROWS
             if total_page_count >= int(body.findtext("totalCount")):
@@ -102,7 +119,10 @@ class CourseWeatherLoader:
 
             query_params["pageNo"] += 1
 
-        return None
+        return WeatherSearchResult.NOT_FOUND, None
+
+    def is_api_connected(self):
+        return self.__key is not None
 
 if __name__ == '__main__':
     cwl = CourseWeatherLoader()

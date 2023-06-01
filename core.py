@@ -1,6 +1,6 @@
 import tkinter as tk
 import customtkinter as ctk
-from course_weather_loader import CourseWeatherLoader
+from course_weather_loader import CourseWeatherLoader, WeatherSearchResult
 from map_loader import MapLoader
 from PIL import Image
 from weather_details_viewer import WeatherDeatilasViewer
@@ -40,6 +40,8 @@ class Core:
 
         self.__google_api_key_label = None
         self.__google_api_key_entry = None
+        self.__data_api_key_label = None
+        self.__data_api_key_entry = None
         self.__option_frame_message_label = None
 
         self.__selected_tourist_spot_course_id = 0
@@ -65,6 +67,10 @@ class Core:
 
     def __initialize(self):
         self.__cw_loader = CourseWeatherLoader()
+
+        decrypted_key = self.__load_key("data")
+        if decrypted_key != '':
+            self.__cw_loader.connect_api(decrypted_key)
 
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("dark-blue")
@@ -257,15 +263,9 @@ class Core:
         map_frame.grid_rowconfigure(0, weight=1)
         self.__map_loader = MapLoader(map_frame)
 
-        try:
-            key_file = open("api_keys/google_map", 'rb')
-            encrypted_key = key_file.read()
-            decrypted_key = ed.decrypt_key(encrypted_key).decode("ascii")
-            key_file.close()
-
+        decrypted_key = self.__load_key("google_map")
+        if decrypted_key != '':
             self.__map_loader.connect_api(decrypted_key)
-        except:
-            pass
         # endregion
 
         # region 옵션 버튼을 정의합니다.
@@ -314,29 +314,32 @@ class Core:
 
         google_api_key_button = ctk.CTkButton(api_key_input_frame,
                                               font=self.__basic_font,
-                                              text="저장",
+                                              text="등록",
                                               width=30,
                                               corner_radius=0,
-                                              command=self.__register_google_key_api)
+                                              command=self.__register_google_api_key)
         google_api_key_button.grid(row=0, column=2, padx=(3, 0), sticky="nsew")
 
-        data_api_key_label = ctk.CTkLabel(master=api_key_input_frame,
-                                          font=self.__basic_font,
-                                          text="DATA_KEY")
-        data_api_key_label.grid(row=1, column=0, pady=(10, 0))
+        self.__data_api_key_label = ctk.CTkLabel(master=api_key_input_frame,
+                                                 font=self.__basic_font,
+                                                 text="DATA_KEY")
+        self.__data_api_key_label.grid(row=1, column=0, pady=(10, 0))
 
-        data_api_key_entry = ctk.CTkEntry(master=api_key_input_frame,
-                                          font=self.__basic_font,
-                                          width=500,
-                                          corner_radius=0)
-        data_api_key_entry.grid(row=1, column=1, padx=(10, 0), pady=(10, 0), sticky="nsew")
+        if not self.__cw_loader.is_api_connected():
+            self.__data_api_key_label.configure(text_color="#FF2020")
+
+        self.__data_api_key_entry = ctk.CTkEntry(master=api_key_input_frame,
+                                                 font=self.__basic_font,
+                                                 width=500,
+                                                 corner_radius=0)
+        self.__data_api_key_entry.grid(row=1, column=1, padx=(10, 0), pady=(10, 0), sticky="nsew")
 
         data_api_key_button = ctk.CTkButton(api_key_input_frame,
                                             font=self.__basic_font,
-                                            text="저장",
+                                            text="등록",
                                             width=30,
                                             corner_radius=0,
-                                            command=self.__on_keyword_searched)
+                                            command=self.__register_data_api_key)
         data_api_key_button.grid(row=1, column=2, padx=(3, 0), pady=(10, 0), sticky="nsew")
         # endregion
 
@@ -465,13 +468,17 @@ class Core:
             else:
                 self.__print_message("'" + tourist_spot + "'의 좌표를 알 수 없어 지도가 표시되지 않습니다.", 3500.0)
         else:
-            self.__print_message("구글 지도 API 키가 유효하지 않아 지도를 표시할 수 없습니다. 다시 확인해 주세요", 4000.0)
+            self.__print_message("구글 지도 API 키가 유효하지 않아 지도를 표시할 수 없습니다. 키를 다시 확인해 주세요", 4000.0)
 
         self.__selected_tourist_spot_button_index = selected_button_index
 
     def __on_weather_selected(self):
         if self.__selected_tourist_spot_course_id == 0:
             self.__print_message("관광지가 선택되어 있지 않아 날씨를 조회할 수 없습니다.", 3500.0)
+            return
+
+        if not self.__cw_loader.is_api_connected():
+            self.__print_message("공공데이터포털 API 키가 유효하지 않아 날씨를 조회할 수 없습니다. 키를 다시 확인해 주세요", 4000.0)
             return
 
         year = self.__year_entry.get()
@@ -481,11 +488,11 @@ class Core:
         date = year + month + day + time
 
         tourist_spot = self.__recommand_tourist_spot_buttons[self.__selected_tourist_spot_button_index].cget("text")
-        searched_weather = self.__cw_loader.search_weather(self.__selected_tourist_spot_course_id,
-                                                           tourist_spot,
-                                                           date)
+        search_result, searched_weather = self.__cw_loader.search_weather(self.__selected_tourist_spot_course_id,
+                                                                          tourist_spot,
+                                                                          date)
 
-        if searched_weather:
+        if search_result == WeatherSearchResult.SUCCESS:
             self.__temperature_label.configure(text=searched_weather['th3'] + '%')
             self.__wind_direction_label.configure(text=searched_weather['wd'] + '°')
             self.__wind_speed_label.configure(text=searched_weather['ws'] + 'm/s')
@@ -499,7 +506,7 @@ class Core:
                 self.__sky_state_label.configure(text='구름 많음')
             elif sky == 4:
                 self.__sky_state_label.configure(text='흐림')
-        else:
+        elif search_result == WeatherSearchResult.NOT_FOUND:
             self.__print_message("'" + tourist_spot + "'" + "의 해당 날짜에는 날씨를 조회할 수 없습니다.")
 
     def __open_weather_details_viewer(self):
@@ -517,18 +524,47 @@ class Core:
 
         self.__current_frame.pack(fill="both", expand=True)
 
-    def __register_google_key_api(self):
+    def __register_google_api_key(self):
         input_key = self.__google_api_key_entry.get()
         if self.__map_loader.connect_api(input_key):
             encrypted_key = ed.encrypt_key(bytes(input_key, "ascii"))
-            google_map_key_file = open("api_keys/google_map", 'wb')
-            google_map_key_file.write(encrypted_key)
+            key_file = open("api_keys/google_map", 'wb')
+            key_file.write(encrypted_key)
 
             self.__google_api_key_label.configure(text_color=self.__basic_font_color)
             self.__google_api_key_entry.delete(0, "end")
             self.__print_message("구글 지도 API 키가 정상적으로 등록되었습니다.", 3500.0, "#2020FF")
         else:
             self.__print_message("유효하지 않는 키입니다. 다시 확인해 주세요.")
+
+    def __register_data_api_key(self):
+        input_key = self.__data_api_key_entry.get()
+        if self.__cw_loader.connect_api(input_key):
+            encrypted_key = ed.encrypt_key(bytes(input_key, "ascii"))
+            key_file = open("api_keys/data", 'wb')
+            key_file.write(encrypted_key)
+
+            self.__data_api_key_label.configure(text_color=self.__basic_font_color)
+            self.__data_api_key_entry.delete(0, "end")
+            self.__print_message("공공데이터포털 API 키가 정상적으로 등록되었습니다.", 3500.0, "#2020FF")
+        else:
+            self.__print_message("유효하지 않는 키입니다. 다시 확인해 주세요.")
+
+    @staticmethod
+    def __load_key(file_name):
+        try:
+            key_file = open("api_keys/" + file_name, 'rb')
+        except:
+            return ''
+
+        encrypted_key = key_file.read()
+
+        try:
+            decrypted_key = ed.decrypt_key(encrypted_key).decode("ascii")
+        except:  # 바이너리 데이터가 아닌 경우
+            return ''
+
+        return decrypted_key
 
     def __print_message(self, message, show_delay=2000.0, text_color="#FF2020"):
         if self.__current_frame is self.__main_frame:
