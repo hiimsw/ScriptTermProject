@@ -4,6 +4,7 @@ from course_weather_loader import CourseWeatherLoader
 from map_loader import MapLoader
 from PIL import Image
 from weather_details_viewer import WeatherDeatilasViewer
+import endecoder as ed
 
 
 class Core:
@@ -13,6 +14,7 @@ class Core:
         self.__main_frame = None
         self.__option_frame = None
         self.__basic_font = None
+        self.__basic_font_color = None
         self.__search_frame = None
         self.__search_menu = None
         self.__search_entry = None
@@ -34,7 +36,11 @@ class Core:
         self.__sky_state_label = None
         self.__humidity_label = None
         self.__rainfall_probability = None
-        self.__message_label = None
+        self.__main_frame_message_label = None
+
+        self.__google_api_key_label = None
+        self.__google_api_key_entry = None
+        self.__option_frame_message_label = None
 
         self.__selected_tourist_spot_course_id = 0
         self.__cw_loader = None
@@ -43,8 +49,7 @@ class Core:
         self.__message_label_show_remaining_time = 0.0
 
     def run(self):
-        self.__cw_loader = CourseWeatherLoader()
-        self.__initialize_gui()
+        self.__initialize()
         self.__update()
         self.__app.mainloop()
 
@@ -58,7 +63,9 @@ class Core:
 
         self.__app.after(30, self.__update)
 
-    def __initialize_gui(self):
+    def __initialize(self):
+        self.__cw_loader = CourseWeatherLoader()
+
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("dark-blue")
 
@@ -67,6 +74,7 @@ class Core:
         self.__app.resizable(False, False)
         self.__app.title("Travel & Weather")
         self.__basic_font = ctk.CTkFont(family="맑은 고딕", size=12)
+        self.__basic_font_color = ['gray14', 'gray84']
 
         self.__initialize_main_frame()
         self.__initialize_option_frame()
@@ -247,10 +255,17 @@ class Core:
         map_frame = tk.Frame(master=self.__main_frame, width=300, height=200, bg='#E5E5E5')
         map_frame.grid(row=0, column=2, padx=(10, 0), sticky="ew")
         map_frame.grid_rowconfigure(0, weight=1)
+        self.__map_loader = MapLoader(map_frame)
 
-        self.__map_loader = MapLoader()
-        if self.__map_loader.connect_api("api_keys/google_key"):
-            self.__map_loader.attach_to_frame(map_frame)
+        try:
+            key_file = open("api_keys/google_map", 'rb')
+            encrypted_key = key_file.read()
+            decrypted_key = ed.decrypt_key(encrypted_key).decode("ascii")
+            key_file.close()
+
+            self.__map_loader.connect_api(decrypted_key)
+        except:
+            pass
         # endregion
 
         # region 옵션 버튼을 정의합니다.
@@ -266,12 +281,12 @@ class Core:
         # endregion
 
         # region 하단 상태 메시지 프레임을 정의합니다.
-        self.__message_label = ctk.CTkLabel(master=self.__main_frame,
-                                            font=self.__basic_font,
-                                            fg_color="transparent",
-                                            text_color='#FF2020',
-                                            text="")
-        self.__message_label.place(relx=0.015, rely=0.947)
+        self.__main_frame_message_label = ctk.CTkLabel(master=self.__main_frame,
+                                                       font=self.__basic_font,
+                                                       fg_color="transparent",
+                                                       text_color='#FF2020',
+                                                       text="")
+        self.__main_frame_message_label.place(relx=0.015, rely=0.947)
         # endregion
 
     def __initialize_option_frame(self):
@@ -283,24 +298,26 @@ class Core:
         api_key_input_frame = ctk.CTkFrame(master=self.__option_frame, fg_color="transparent")
         api_key_input_frame.grid(row=0, column=1, pady=(200, 0), sticky="nsew")
 
-        google_api_key_label = ctk.CTkLabel(master=api_key_input_frame,
-                                            font=self.__basic_font,
-                                            text_color='#FF2020',
-                                            text="GOOGLE_KEY")
-        google_api_key_label.grid(row=0, column=0)
+        self.__google_api_key_label = ctk.CTkLabel(master=api_key_input_frame,
+                                                   font=self.__basic_font,
+                                                   text="GOOGLE_KEY")
+        self.__google_api_key_label.grid(row=0, column=0)
 
-        google_api_key_entry = ctk.CTkEntry(master=api_key_input_frame,
-                                            font=self.__basic_font,
-                                            width=500,
-                                            corner_radius=0)
-        google_api_key_entry.grid(row=0, column=1, padx=(10, 0), sticky="nsew")
+        if not self.__map_loader.is_api_connected():
+            self.__google_api_key_label.configure(text_color="#FF2020")
+
+        self.__google_api_key_entry = ctk.CTkEntry(master=api_key_input_frame,
+                                                   font=self.__basic_font,
+                                                   width=500,
+                                                   corner_radius=0)
+        self.__google_api_key_entry.grid(row=0, column=1, padx=(10, 0), sticky="nsew")
 
         google_api_key_button = ctk.CTkButton(api_key_input_frame,
                                               font=self.__basic_font,
-                                              text="입력",
+                                              text="저장",
                                               width=30,
                                               corner_radius=0,
-                                              command=self.__on_keyword_searched)
+                                              command=self.__register_google_key_api)
         google_api_key_button.grid(row=0, column=2, padx=(3, 0), sticky="nsew")
 
         data_api_key_label = ctk.CTkLabel(master=api_key_input_frame,
@@ -316,7 +333,7 @@ class Core:
 
         data_api_key_button = ctk.CTkButton(api_key_input_frame,
                                             font=self.__basic_font,
-                                            text="입력",
+                                            text="저장",
                                             width=30,
                                             corner_radius=0,
                                             command=self.__on_keyword_searched)
@@ -335,6 +352,15 @@ class Core:
         return_button.place(relx=0.95, rely=0.929)
         # endregion
 
+        # region 하단 상태 메시지 프레임을 정의합니다.
+        self.__option_frame_message_label = ctk.CTkLabel(master=self.__option_frame,
+                                                         font=self.__basic_font,
+                                                         fg_color="transparent",
+                                                         text_color="#FF2020",
+                                                         text="")
+        self.__option_frame_message_label.place(relx=0.015, rely=0.947)
+        # endregion
+
     def __create_search_result_frame(self):
         self.__search_result_frame = ctk.CTkScrollableFrame(master=self.__search_frame,
                                                             label_font=self.__basic_font,
@@ -346,7 +372,7 @@ class Core:
     def __on_keyword_searched(self):
         search_keyword = self.__search_entry.get()
         if search_keyword == '':
-            self.__print_message("키워드를 입력해 주세요")
+            self.__print_message("키워드를 입력해 주세요.")
             return
 
         search_type = self.__search_menu.get()
@@ -431,12 +457,15 @@ class Core:
         selected_button.configure(state="disabled", fg_color=['#3a7ebf', '#1f538d'])
 
         tourist_spot = selected_button.cget("text")
-        lat_lng = self.__map_loader.find_lat_lng(tourist_spot)
 
-        if lat_lng:
-            self.__map_loader.show_map(lat_lng)
+        if self.__map_loader.is_api_connected():
+            lat_lng = self.__map_loader.find_lat_lng(tourist_spot)
+            if lat_lng:
+                self.__map_loader.show_map(lat_lng)
+            else:
+                self.__print_message("'" + tourist_spot + "'의 좌표를 알 수 없어 지도가 표시되지 않습니다.", 3500.0)
         else:
-            self.__print_message("'" + tourist_spot + "'의 좌표를 알 수 없어 지도가 표시되지 않습니다.", 3500.0)
+            self.__print_message("구글 지도 API 키가 유효하지 않아 지도를 표시할 수 없습니다. 다시 확인해 주세요", 4000.0)
 
         self.__selected_tourist_spot_button_index = selected_button_index
 
@@ -481,14 +510,33 @@ class Core:
 
         if self.__current_frame == self.__main_frame:
             self.__current_frame = self.__option_frame
+            self.__main_frame_message_label.configure(text="")
         else:
             self.__current_frame = self.__main_frame
+            self.__option_frame_message_label.configure(text="")
 
         self.__current_frame.pack(fill="both", expand=True)
 
-    def __print_message(self, message, show_delay=2000.0):
-        self.__message_label.configure(text=message)
+    def __register_google_key_api(self):
+        input_key = self.__google_api_key_entry.get()
+        if self.__map_loader.connect_api(input_key):
+            encrypted_key = ed.encrypt_key(bytes(input_key, "ascii"))
+            google_map_key_file = open("api_keys/google_map", 'wb')
+            google_map_key_file.write(encrypted_key)
+
+            self.__google_api_key_label.configure(text_color=self.__basic_font_color)
+            self.__google_api_key_entry.delete(0, "end")
+            self.__print_message("구글 지도 API 키가 정상적으로 등록되었습니다.", 3500.0, "#2020FF")
+        else:
+            self.__print_message("유효하지 않는 키입니다. 다시 확인해 주세요.")
+
+    def __print_message(self, message, show_delay=2000.0, text_color="#FF2020"):
+        if self.__current_frame is self.__main_frame:
+            self.__main_frame_message_label.configure(text=message, text_color=text_color)
+        else:
+            self.__option_frame_message_label.configure(text=message, text_color=text_color)
         self.__message_label_show_remaining_time = show_delay
+
 
 if __name__ == '__main__':
     core = Core()
