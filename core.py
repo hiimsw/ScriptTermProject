@@ -49,6 +49,7 @@ class Core:
         self.__cw_loader = None
         self.__map_loader = None
 
+        self.__weather_infos = [{} for _ in range(3)]
         self.__message_label_show_remaining_time = 0.0
 
     def run(self):
@@ -128,11 +129,12 @@ class Core:
         # endregion
 
         # region 날씨 프레임을 정의합니다.
-        self.__weather_frame = ctk.CTkFrame(master=self.__main_frame, width=250)
+        self.__weather_frame = ctk.CTkFrame(master=self.__main_frame)
         self.__weather_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 30), sticky="nsew")
         self.__weather_frame.grid_rowconfigure(2, weight=1)
 
-        self.__weather_details_frame = ctk.CTkFrame(master=self.__main_frame, width=250)
+        self.__weather_details_frame = ctk.CTkFrame(master=self.__main_frame)
+        self.__weather_details_frame.grid_columnconfigure(0, minsize=325)
         self.__weather_details_frame.grid_rowconfigure(2, weight=1)
 
         date_frame = ctk.CTkFrame(master=self.__weather_frame)
@@ -250,6 +252,46 @@ class Core:
 
         self.__rainfall_probability = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="-")
         self.__rainfall_probability.grid(row=6, column=2, padx=(87, 0), stick='nsew')
+
+        small_font = ctk.CTkFont(family="맑은 고딕", size=11)
+
+        for i in range(2):
+            for j in range(9):
+                graph = ctk.CTkProgressBar(master=self.__weather_details_frame,
+                                           orientation="vertical",
+                                           height=150,
+                                           width=20,
+                                           corner_radius=0,
+                                           fg_color=self.__weather_details_frame.cget("fg_color"))
+                graph.place(relx=j * 0.085 + (j // 3 * 0.08) + 0.04, rely=(i * 0.43) + 0.06)
+                graph.set(1.0)
+
+                value_label = ctk.CTkLabel(master=self.__weather_details_frame, font=small_font, text="-")
+                value_label.place(relx=j * 0.09 + (j // 3 * 0.067) + 0.065, rely=(i * 0.43) + 0.39, anchor=ctk.CENTER)
+
+        ctk.CTkLabel(master=self.__weather_details_frame,
+                     font=self.__basic_font,
+                     text="기온(℃)").place(relx=0.1, rely=0.4)
+
+        ctk.CTkLabel(master=self.__weather_details_frame,
+                     font=self.__basic_font,
+                     text="풍향(°)").place(relx=0.425, rely=0.4)
+
+        ctk.CTkLabel(master=self.__weather_details_frame,
+                     font=self.__basic_font,
+                     text="풍속(m/s)").place(relx=0.76, rely=0.4)
+
+        ctk.CTkLabel(master=self.__weather_details_frame,
+                     font=self.__basic_font,
+                     text="하늘상태").place(relx=0.09, rely=0.83)
+
+        ctk.CTkLabel(master=self.__weather_details_frame,
+                     font=self.__basic_font,
+                     text="습도(%)").place(relx=0.44, rely=0.83)
+
+        ctk.CTkLabel(master=self.__weather_details_frame,
+                     font=self.__basic_font,
+                     text="강수확률(%)").place(relx=0.73, rely=0.83)
 
         for i in range(2):
             if i == 0:
@@ -505,29 +547,53 @@ class Core:
         month = self.__month_entry.get()
         day = self.__day_entry.get()
         time = self.__time_entry.get().split(':')[0]
-        date = year + month + day + time
-
+        date = int(year + month + day + time)
         tourist_spot = self.__recommand_tourist_spot_buttons[self.__selected_tourist_spot_button_index].cget("text")
+
         search_result, searched_weather = self.__cw_loader.search_weather(self.__selected_tourist_spot_course_id,
                                                                           tourist_spot,
-                                                                          date)
+                                                                          str(date))
 
-        if search_result == WeatherSearchResult.SUCCESS:
-            self.__temperature_label.configure(text=searched_weather['th3'] + '%')
-            self.__wind_direction_label.configure(text=searched_weather['wd'] + '°')
-            self.__wind_speed_label.configure(text=searched_weather['ws'] + 'm/s')
-            self.__humidity_label.configure(text=searched_weather['rhm'] + '%')
-            self.__rainfall_probability.configure(text=searched_weather['pop'] + '%')
-
-            sky = int(searched_weather['sky'])
-            if sky == 1:
-                self.__sky_state_label.configure(text='맑음')
-            elif sky == 3:
-                self.__sky_state_label.configure(text='구름 많음')
-            elif sky == 4:
-                self.__sky_state_label.configure(text='흐림')
-        elif search_result == WeatherSearchResult.NOT_FOUND:
+        if search_result == WeatherSearchResult.NOT_FOUND:
             self.__print_message("'" + tourist_spot + "'" + "의 해당 날짜에는 날씨를 조회할 수 없습니다.")
+            return
+
+        th3 = searched_weather['th3']
+        wd = searched_weather['wd']
+        ws = searched_weather['ws']
+        rhm = searched_weather['rhm']
+        pop = searched_weather['pop']
+        sky = searched_weather['sky']
+
+        self.__temperature_label.configure(text=th3 + '℃')
+        self.__wind_direction_label.configure(text=wd + '°')
+        self.__wind_speed_label.configure(text=ws + 'm/s')
+        self.__humidity_label.configure(text=rhm + '%')
+        self.__rainfall_probability.configure(text=pop + '%')
+
+        sky = int(sky)
+        if sky == 1:
+            self.__sky_state_label.configure(text='맑음')
+        elif sky == 3:
+            self.__sky_state_label.configure(text='구름 많음')
+        elif sky == 4:
+            self.__sky_state_label.configure(text='흐림')
+
+        self.__weather_infos[1] = searched_weather
+
+        search_result, searched_weather = self.__cw_loader.search_weather(self.__selected_tourist_spot_course_id,
+                                                                          tourist_spot,
+                                                                          str(date - 100))
+
+        if search_result != WeatherSearchResult.NOT_FOUND:
+            self.__weather_infos[0] = searched_weather
+
+        search_result, searched_weather = self.__cw_loader.search_weather(self.__selected_tourist_spot_course_id,
+                                                                          tourist_spot,
+                                                                          str(date + 100))
+
+        if search_result != WeatherSearchResult.NOT_FOUND:
+            self.__weather_infos[2] = searched_weather
 
     def __change_frame(self):
         self.__current_frame.pack_forget()
