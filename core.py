@@ -14,6 +14,8 @@ class Core:
         self.__option_frame = None
         self.__basic_font = None
         self.__basic_font_color = None
+        self.__weather_frame = None
+        self.__weather_details_frame = None
         self.__search_frame = None
         self.__search_menu = None
         self.__search_entry = None
@@ -126,11 +128,14 @@ class Core:
         # endregion
 
         # region 날씨 프레임을 정의합니다.
-        weather_frame = ctk.CTkFrame(master=self.__main_frame, width=250)
-        weather_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 30), sticky="nsew")
-        weather_frame.grid_rowconfigure(2, weight=1)
+        self.__weather_frame = ctk.CTkFrame(master=self.__main_frame, width=250)
+        self.__weather_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 30), sticky="nsew")
+        self.__weather_frame.grid_rowconfigure(2, weight=1)
 
-        date_frame = ctk.CTkFrame(master=weather_frame)
+        self.__weather_details_frame = ctk.CTkFrame(master=self.__main_frame, width=250)
+        self.__weather_details_frame.grid_rowconfigure(2, weight=1)
+
+        date_frame = ctk.CTkFrame(master=self.__weather_frame)
         date_frame.grid(row=0, column=0, sticky="nsew")
 
         years = [str(2000 + i) for i in range(23, 18, -1)]
@@ -182,7 +187,7 @@ class Core:
                                                   command=self.__on_weather_selected)
         self.__date_search_button.grid(row=0, column=4, stick="nsew")
 
-        weather_info_frame = ctk.CTkFrame(master=weather_frame, fg_color="transparent")
+        weather_info_frame = ctk.CTkFrame(master=self.__weather_frame, fg_color="transparent")
         weather_info_frame.grid(row=1, column=0, pady=(20, 0), sticky="nsew")
         weather_info_frame.grid_rowconfigure(3, minsize=100)
 
@@ -246,13 +251,30 @@ class Core:
         self.__rainfall_probability = ctk.CTkLabel(master=weather_info_frame, font=self.__basic_font, text="-")
         self.__rainfall_probability.grid(row=6, column=2, padx=(87, 0), stick='nsew')
 
-        weather_details_button = ctk.CTkButton(weather_frame,
-                                               font=self.__basic_font,
-                                               text="상세보기",
-                                               width=10,
-                                               height=15,
-                                               corner_radius=5)
-        weather_details_button.grid(row=3, column=0, padx=(0, 0), pady=(0, 15))
+        for i in range(2):
+            if i == 0:
+                weather_view_mode_frame = ctk.CTkFrame(master=self.__weather_frame)
+            else:
+                weather_view_mode_frame = ctk.CTkFrame(master=self.__weather_details_frame)
+            weather_view_mode_frame.grid(row=3, column=0, padx=(0, 0), pady=(0, 15))
+
+            weather_view_button = ctk.CTkButton(master=weather_view_mode_frame,
+                                                font=self.__basic_font,
+                                                text="이날의 날씨",
+                                                width=10,
+                                                height=15,
+                                                corner_radius=0,
+                                                command=lambda x=0: self.__change_weather_frame(x))
+            weather_view_button.grid(row=0, column=0)
+
+            weather_details_button = ctk.CTkButton(master=weather_view_mode_frame,
+                                                   font=self.__basic_font,
+                                                   text="자세한 날씨",
+                                                   width=10,
+                                                   height=15,
+                                                   corner_radius=0,
+                                                   command=lambda x=1: self.__change_weather_frame(x))
+            weather_details_button.grid(row=0, column=1)
         # endregion
 
         # region 지도 프레임을 정의합니다
@@ -518,6 +540,16 @@ class Core:
             self.__option_frame_message_label.configure(text="")
 
         self.__current_frame.pack(fill="both", expand=True)
+
+    def __change_weather_frame(self, button_index):
+        if button_index == 0:
+            self.__weather_details_frame.grid_forget()
+            self.__weather_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 30), sticky="nsew")
+        elif button_index == 1:
+            self.__weather_frame.grid_forget()
+            self.__weather_details_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 30), sticky="nsew")
+        else:
+            assert False, "지원하지 않는 버튼 인덱스입니다."
 
     def __register_google_api_key(self):
         input_key = self.__google_api_key_entry.get()
