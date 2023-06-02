@@ -90,6 +90,10 @@ class CourseWeatherLoader:
 
         while True:
             response = requests.get(self.URL, params=query_params)
+
+            if "DB_ERROR" in response.text:
+                return WeatherSearchResult.NOT_FOUND, None
+
             root = ET.fromstring(response.text)
             body = root.find("body")
             items = body.find("items")
