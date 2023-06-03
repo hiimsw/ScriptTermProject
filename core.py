@@ -16,6 +16,7 @@ class Core:
         self.__basic_font_color = None
         self.__weather_frame = None
         self.__weather_details_frame = None
+        self.__current_weather_frame = None
         self.__search_frame = None
         self.__search_menu = None
         self.__search_entry = None
@@ -38,6 +39,7 @@ class Core:
         self.__humidity_label = None
         self.__rainfall_probability = None
         self.__main_frame_message_label = None
+        self.__weather_graphs = []
 
         self.__google_api_key_label = None
         self.__google_api_key_entry = None
@@ -64,6 +66,74 @@ class Core:
             if self.__message_label_show_remaining_time <= 0.0:
                 self.__message_label_show_remaining_time = 0.0
                 self.__print_message("", 0.0)
+
+        if self.__current_weather_frame == self.__weather_details_frame:
+            graph_speed = 40 * 0.001
+            max_th3 = 0.0
+            max_wd = 0.0
+            max_ws = 0.0
+            max_sky = 0.0
+            max_rhm = 0.0
+            max_pop = 0.0
+
+            for i in range(len(self.__weather_infos)):
+                if len(self.__weather_infos[i]) == 0:
+                    continue
+
+                weather = self.__weather_infos[i]
+                max_th3 = max(max_th3, float(weather['th3']))
+                max_wd = max(max_wd, float(weather['wd']))
+                max_ws = max(max_ws, float(weather['ws']))
+                max_sky = max(max_sky, float(weather['sky']))
+                max_rhm = max(max_rhm, float(weather['rhm']))
+                max_pop = max(max_pop, float(weather['pop']))
+
+            for i in range(len(self.__weather_infos)):
+                if len(self.__weather_infos[i]) == 0:
+                    continue
+
+                weather = self.__weather_infos[i]
+                if max_th3 != 0.0:
+                    value = self.__weather_graphs[i + 0].get()
+                    value = self.__lerp(value, float(weather['th3']) / max_th3, 5 * graph_speed)
+                    self.__weather_graphs[i + 0].set(value)
+                else:
+                    self.__weather_graphs[i + 0].set(0.01)
+
+                if max_wd != 0.0:
+                    value = self.__weather_graphs[i + 3].get()
+                    value = self.__lerp(value, float(weather['wd']) / max_wd, 5 * graph_speed)
+                    self.__weather_graphs[i + 3].set(value)
+                else:
+                    self.__weather_graphs[i + 3].set(0.01)
+
+                if max_wd != 0.0:
+                    value = self.__weather_graphs[i + 6].get()
+                    value = self.__lerp(value, float(weather['ws']) / max_ws, 5 * graph_speed)
+                    self.__weather_graphs[i + 6].set(value)
+                else:
+                    self.__weather_graphs[i + 6].set(0.01)
+
+                if max_sky != 0.0:
+                    value = self.__weather_graphs[i + 9].get()
+                    value = self.__lerp(value, float(weather['sky']) / max_sky, 5 * graph_speed)
+                    self.__weather_graphs[i + 9].set(value)
+                else:
+                    self.__weather_graphs[i + 9].set(0.01)
+
+                if max_rhm != 0.0:
+                    value = self.__weather_graphs[i + 12].get()
+                    value = self.__lerp(value, float(weather['rhm']) / max_rhm, 5 * graph_speed)
+                    self.__weather_graphs[i + 12].set(value)
+                else:
+                    self.__weather_graphs[i + 12].set(0.01)
+
+                if max_pop != 0.0:
+                    value = self.__weather_graphs[i + 15].get()
+                    value = self.__lerp(value, float(weather['pop']) / max_pop, 5 * graph_speed)
+                    self.__weather_graphs[i + 15].set(value)
+                else:
+                    self.__weather_graphs[i + 15].set(0.01)
 
         self.__app.after(30, self.__update)
 
@@ -254,6 +324,7 @@ class Core:
         self.__rainfall_probability.grid(row=6, column=2, padx=(87, 0), stick='nsew')
 
         small_font = ctk.CTkFont(family="맑은 고딕", size=11)
+        self.__weather_graphs.clear()
 
         for i in range(2):
             for j in range(9):
@@ -264,7 +335,9 @@ class Core:
                                            corner_radius=0,
                                            fg_color=self.__weather_details_frame.cget("fg_color"))
                 graph.place(relx=j * 0.085 + (j // 3 * 0.08) + 0.04, rely=(i * 0.43) + 0.06)
-                graph.set(1.0)
+                graph.set(0.01)
+
+                self.__weather_graphs.append(graph)
 
                 value_label = ctk.CTkLabel(master=self.__weather_details_frame, font=small_font, text="-")
                 value_label.place(relx=j * 0.09 + (j // 3 * 0.067) + 0.065, rely=(i * 0.43) + 0.39, anchor=ctk.CENTER)
@@ -587,6 +660,8 @@ class Core:
 
         if search_result != WeatherSearchResult.NOT_FOUND:
             self.__weather_infos[0] = searched_weather
+        else:
+            self.__weather_infos[0] = {}
 
         search_result, searched_weather = self.__cw_loader.search_weather(self.__selected_tourist_spot_course_id,
                                                                           tourist_spot,
@@ -594,6 +669,8 @@ class Core:
 
         if search_result != WeatherSearchResult.NOT_FOUND:
             self.__weather_infos[2] = searched_weather
+        else:
+            self.__weather_infos[2] = {}
 
     def __change_frame(self):
         self.__current_frame.pack_forget()
@@ -611,9 +688,15 @@ class Core:
         if button_index == 0:
             self.__weather_details_frame.grid_forget()
             self.__weather_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 30), sticky="nsew")
+            self.__current_weather_frame = self.__weather_frame
         elif button_index == 1:
             self.__weather_frame.grid_forget()
             self.__weather_details_frame.grid(row=0, column=1, padx=(10, 0), pady=(20, 30), sticky="nsew")
+            self.__current_weather_frame = self.__weather_details_frame
+
+            for i in range(len(self.__weather_graphs)):
+                self.__weather_graphs[i].set(0.01)
+
         else:
             assert False, "지원하지 않는 버튼 인덱스입니다."
 
@@ -666,6 +749,9 @@ class Core:
             self.__option_frame_message_label.configure(text=message, text_color=text_color)
         self.__message_label_show_remaining_time = show_delay
 
+    @staticmethod
+    def __lerp(a, b, t):
+        return a * (1 - t) + b * t
 
 if __name__ == '__main__':
     core = Core()
