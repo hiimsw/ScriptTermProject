@@ -5,6 +5,8 @@ from map_loader import MapLoader
 from PIL import Image
 import endecoder as ed
 from document_creator import DocumentCreator
+from teller import Teller
+import telepot
 
 
 class Core:
@@ -47,12 +49,15 @@ class Core:
         self.__google_api_key_entry = None
         self.__data_api_key_label = None
         self.__data_api_key_entry = None
+        self.__teller_api_key_label = None
+        self.__teller_api_key_entry = None
         self.__option_frame_message_label = None
 
         self.__selected_tourist_spot_course_id = 0
         self.__cw_loader = None
         self.__map_loader = None
         self.__doc_creator = None
+        self.__teller = None
 
         self.__weather_infos = [{} for _ in range(3)]
         self.__message_label_show_remaining_time = 0.0
@@ -121,6 +126,13 @@ class Core:
 
         self.__doc_creator = DocumentCreator()
         self.__doc_creator.connect_api()
+
+        self.__teller = Teller()
+
+        decrypted_key = self.__load_key("telegram")
+        if decrypted_key != '':
+            self.__teller.connect_api(decrypted_key)
+            self.__teller.set_message_handler(self.__handle_user_message)
 
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("dark-blue")
@@ -454,6 +466,28 @@ class Core:
                                             corner_radius=0,
                                             command=self.__register_data_api_key)
         data_api_key_button.grid(row=1, column=2, padx=(3, 0), pady=(10, 0), sticky="nsew")
+
+        self.__teller_api_key_label = ctk.CTkLabel(master=api_key_input_frame,
+                                                   font=self.__basic_font,
+                                                   text="TELEGRAM_KEY")
+        self.__teller_api_key_label.grid(row=2, column=0, pady=(10, 0))
+
+        if not self.__teller.is_api_connected():
+            self.__teller_api_key_label.configure(text_color=self.__warning_color)
+
+        self.__teller_api_key_entry = ctk.CTkEntry(master=api_key_input_frame,
+                                                   font=self.__basic_font,
+                                                   width=500,
+                                                   corner_radius=0)
+        self.__teller_api_key_entry.grid(row=2, column=1, padx=(10, 0), pady=(10, 0), sticky="nsew")
+
+        teller_api_key_button = ctk.CTkButton(api_key_input_frame,
+                                              font=self.__basic_font,
+                                              text="등록",
+                                              width=30,
+                                              corner_radius=0,
+                                              command=self.__register_telegram_api_key)
+        teller_api_key_button.grid(row=2, column=2, padx=(3, 0), pady=(10, 0), sticky="nsew")
         # endregion
 
         # region 돌아가기 버튼을 정의합니다.
@@ -498,15 +532,6 @@ class Core:
                                           corner_radius=2,
                                           command=lambda x=1: self.__save_weather(x))
         local_save_button.grid(row=1, column=0, pady=(2, 0))
-
-        telegram_save_button = ctk.CTkButton(master=save_frame,
-                                             width=10,
-                                             height=10,
-                                             font=self.__basic_font,
-                                             text="TBot 저장",
-                                             corner_radius=2,
-                                             command=lambda x=2: self.__save_weather(x))
-        telegram_save_button.grid(row=2, column=0, pady=(2, 0))
         # endregion
 
     def __create_search_result_frame(self):
@@ -718,31 +743,55 @@ class Core:
         else:
             assert False, "지원하지 않는 버튼 인덱스입니다."
 
-    def __register_google_api_key(self):
-        input_key = self.__google_api_key_entry.get()
-        if self.__map_loader.connect_api(input_key):
+    def __register_api_key(self, entry, label, key_filename, api, success_text):
+        input_key = entry.get()
+        if api.connect_api(input_key):
             encrypted_key = ed.encrypt_key(bytes(input_key, "ascii"))
-            key_file = open("api_keys/google_map", 'wb')
+            key_file = open(key_filename, 'wb')
             key_file.write(encrypted_key)
+            key_file.close()
 
-            self.__google_api_key_label.configure(text_color=self.__basic_font_color)
-            self.__google_api_key_entry.delete(0, "end")
-            self.__print_message("구글 지도 API 키가 정상적으로 등록되었습니다.", 3500.0, self.__blue_color)
+            label.configure(text_color=self.__basic_font_color)
+            entry.delete(0, "end")
+            self.__print_message(success_text, 3500.0, self.__blue_color)
+
+            return 0
+        elif api.is_api_connected():
+            self.__print_message("키가 유효하지 않아 재등록에 실패하였습니다.")
+
+            return 1
         else:
-            self.__print_message("유효하지 않는 키입니다. 다시 확인해 주세요.")
+            self.__print_message("키가 유효하지 않아 등록을 실패하였습니다. 다시 확인해 주세요.")
+
+            return 2
+
+    def __register_google_api_key(self):
+        self.__register_api_key(self.__google_api_key_entry,
+                                self.__google_api_key_label,
+                                "api_keys/google_map",
+                                self.__map_loader,
+                                "구글 지도 API 키가 정상적으로 등록되었습니다.")
 
     def __register_data_api_key(self):
-        input_key = self.__data_api_key_entry.get()
-        if self.__cw_loader.connect_api(input_key):
-            encrypted_key = ed.encrypt_key(bytes(input_key, "ascii"))
-            key_file = open("api_keys/data", 'wb')
-            key_file.write(encrypted_key)
+        self.__register_api_key(self.__data_api_key_entry,
+                                self.__data_api_key_label,
+                                "api_keys/data",
+                                self.__cw_loader,
+                                "공공데이터포털 API 키가 정상적으로 등록되었습니다.")
 
-            self.__data_api_key_label.configure(text_color=self.__basic_font_color)
-            self.__data_api_key_entry.delete(0, "end")
-            self.__print_message("공공데이터포털 API 키가 정상적으로 등록되었습니다.", 3500.0, self.__blue_color)
-        else:
-            self.__print_message("유효하지 않는 키입니다. 다시 확인해 주세요.")
+    def __register_telegram_api_key(self):
+        if self.__teller.is_api_connected():
+            self.__print_message("재등록을 원하는 경우 api_keys/telegram을 지우고 프로그램을 재실행 후 다시 시도해 주세요.", 5000.0)
+            return
+
+        result = self.__register_api_key(self.__teller_api_key_entry,
+                                         self.__teller_api_key_label,
+                                         "api_keys/telegram",
+                                         self.__teller,
+                                         "텔레그램 API 키가 정상적으로 등록되었습니다.")
+
+        if result == 0:
+            self.__teller.set_message_handler(self.__handle_user_message)
 
     def __save_weather(self, save_type):
         assert 0 <= save_type <= 2, "지원하지 않는 저장 타입입니다."
@@ -752,7 +801,7 @@ class Core:
             return
 
         if len(self.__selected_date) == 0:
-            self.__print_message("날짜가 선택되어 있지 않아 저장할 수 없습니다. 날짜 선택을 다시해 주세요.", 4000.0)
+            self.__print_message("날짜가 선택되어 있지 않아 저장할 수 없습니다. 날짜를 다시 선택해 주세요.", 4000.0)
             return
 
         substance = "선택한 관광지: {0}\n".format(self.__selected_tourist_spot)
@@ -808,6 +857,44 @@ class Core:
         else:
             self.__option_frame_message_label.configure(text=message, text_color=text_color)
         self.__message_label_show_remaining_time = show_delay
+
+    def __handle_user_message(self, msg):
+        content_type, chat_type, chat_id = telepot.glance(msg)
+        if content_type != 'text':
+            self.__teller.send_message(chat_id, '난 텍스트 이외의 메시지는 처리하지 못해요.')
+            return
+
+        recv_msg = msg["text"]
+        command_word_index = recv_msg.find(':')
+
+        if command_word_index > 0:
+            command_type = recv_msg[0:command_word_index]
+            keyword = recv_msg[command_word_index + 1:].replace(' ', '')
+            tourist_spots = None
+
+            if command_type == "지역명":
+                tourist_spots = self.__cw_loader.find_tourist_spots_by_local_name(keyword)
+            elif command_type == "관광지명":
+                tourist_spots = self.__cw_loader.find_tourist_spots(keyword)
+
+            if tourist_spots is not None:
+                if len(tourist_spots) == 0:
+                    self.__teller.send_message(chat_id, "검색된 결과가 없어요.")
+                    return
+
+                send_msg = ""
+                for i, tourist_spot in enumerate(tourist_spots):
+                    send_msg += tourist_spot[1] + "\n"
+                self.__teller.send_message(chat_id, send_msg)
+
+                return
+
+        send_msg = "관광지 추천 코스를 제공하는 봇입니다.\n아래 양식을 지켜 입력해 주세요.\n"
+        send_msg += "(지역명or관광지명): (키워드)\n"
+        send_msg += "ex)\n"
+        send_msg += "지역명: 포항\n"
+        send_msg += "관광지명: 감천\n"
+        self.__teller.send_message(chat_id, send_msg)
 
     @staticmethod
     def __lerp(a, b, t):

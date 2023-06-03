@@ -35,10 +35,12 @@ class CourseWeatherLoader:
                         "COURSE_ID": 1}
 
         response = requests.get(self.URL, params=query_params)
+
         if not ("SERVICE_KEY_IS_NOT_REGISTERED_ERROR" in response.text):
             self.__key = key
-
-        return self.is_api_connected()
+            return True
+        else:
+            return False
 
     def find_tourist_spots(self, spot_keyword):
         found_tourist_spots = []
