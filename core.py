@@ -833,7 +833,7 @@ class Core:
                 file = open(filename + ".txt", "w")
                 file.write(substance)
                 file.close()
-            self.__print_message("로컬 위치에 문서 저장을 완료하였습니다.", 3000.0, self.__blue_color)
+                self.__print_message("로컬 위치에 문서 저장을 완료하였습니다.", 3000.0, self.__blue_color)
         else:
             pass
 
