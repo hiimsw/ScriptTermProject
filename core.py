@@ -55,6 +55,9 @@ class Core:
         self.__weather_infos = [{} for _ in range(3)]
         self.__message_label_show_remaining_time = 0.0
 
+        self.__blue_color = "#2020FF"
+        self.__warning_color = "#FF2020"
+
     def run(self):
         self.__initialize()
         self.__update()
@@ -82,21 +85,26 @@ class Core:
 
             # 각 날씨 요소를 그래프에 반영합니다.
             for i, weather_info in enumerate(self.__weather_infos):
-                if len(weather_info) == 0:
-                    continue
-
                 for j, weather_element_name in enumerate(weather_element_names):
                     graph_index = i + (j * 3)
-                    element_value = weather_info[weather_element_name]
 
-                    if max_weather_elements[j] != 0.0:
-                        cur_value = self.__weather_graphs[graph_index].get()
-                        to_value = float(element_value) / max_weather_elements[j]
-                        self.__weather_graphs[graph_index].set(self.__lerp(cur_value, to_value, 0.35))
-                        self.__weather_graph_value_labels[graph_index].configure(text=str(element_value))
+                    if len(weather_info) > 0:
+                        element_value = weather_info[weather_element_name]
+
+                        if max_weather_elements[j] > 0.0:
+                            cur_value = self.__weather_graphs[graph_index].get()
+                            to_value = float(element_value) / max_weather_elements[j]
+                            self.__weather_graphs[graph_index].set(self.__lerp(cur_value, to_value, 0.35))
+                            self.__weather_graph_value_labels[graph_index].configure(text=str(element_value))
+                        else:
+                            self.__weather_graphs[graph_index].set(0.05)
+                            self.__weather_graph_value_labels[graph_index].configure(text=str(element_value))
+
+                        self.__weather_graphs[graph_index].configure(progress_color="#3A7EBF")
                     else:
-                        self.__weather_graphs[graph_index].set(0.01)
-                        self.__weather_graph_value_labels[graph_index].configure(text=str(element_value))
+                        self.__weather_graphs[graph_index].set(0.05)
+                        self.__weather_graph_value_labels[graph_index].configure(text='-')
+                        self.__weather_graphs[graph_index].configure(progress_color="#C7545C")
 
         self.__app.after(30, self.__update)
 
@@ -299,7 +307,6 @@ class Core:
                                            corner_radius=0,
                                            fg_color=self.__weather_details_frame.cget("fg_color"))
                 graph.place(relx=j * 0.085 + (j // 3 * 0.08) + 0.04, rely=(i * 0.43) + 0.06)
-                graph.set(0.01)
                 self.__weather_graphs.append(graph)
 
                 value_label = ctk.CTkLabel(master=self.__weather_details_frame, font=small_font, text="-")
@@ -348,12 +355,12 @@ class Core:
 
             weather_details_button = ctk.CTkButton(master=weather_view_mode_frame,
                                                    font=self.__basic_font,
-                                                   text="자세한 날씨",
+                                                   text="상세한 날씨",
                                                    width=10,
                                                    height=15,
                                                    corner_radius=0,
                                                    command=lambda x=1: self.__change_weather_frame(x))
-            weather_details_button.grid(row=0, column=1)
+            weather_details_button.grid(row=0, column=1, padx=(2, 0))
         # endregion
 
         # region 지도 프레임을 정의합니다
@@ -383,7 +390,7 @@ class Core:
         self.__main_frame_message_label = ctk.CTkLabel(master=self.__main_frame,
                                                        font=self.__basic_font,
                                                        fg_color="transparent",
-                                                       text_color='#FF2020',
+                                                       text_color=self.__warning_color,
                                                        text="")
         self.__main_frame_message_label.place(relx=0.015, rely=0.947)
         # endregion
@@ -403,7 +410,7 @@ class Core:
         self.__google_api_key_label.grid(row=0, column=0)
 
         if not self.__map_loader.is_api_connected():
-            self.__google_api_key_label.configure(text_color="#FF2020")
+            self.__google_api_key_label.configure(text_color=self.__warning_color)
 
         self.__google_api_key_entry = ctk.CTkEntry(master=api_key_input_frame,
                                                    font=self.__basic_font,
@@ -425,7 +432,7 @@ class Core:
         self.__data_api_key_label.grid(row=1, column=0, pady=(10, 0))
 
         if not self.__cw_loader.is_api_connected():
-            self.__data_api_key_label.configure(text_color="#FF2020")
+            self.__data_api_key_label.configure(text_color=self.__warning_color)
 
         self.__data_api_key_entry = ctk.CTkEntry(master=api_key_input_frame,
                                                  font=self.__basic_font,
@@ -458,7 +465,7 @@ class Core:
         self.__option_frame_message_label = ctk.CTkLabel(master=self.__option_frame,
                                                          font=self.__basic_font,
                                                          fg_color="transparent",
-                                                         text_color="#FF2020",
+                                                         text_color=self.__warning_color,
                                                          text="")
         self.__option_frame_message_label.place(relx=0.015, rely=0.947)
         # endregion
@@ -659,7 +666,7 @@ class Core:
             self.__current_weather_frame = self.__weather_details_frame
 
             for i in range(len(self.__weather_graphs)):
-                self.__weather_graphs[i].set(0.01)
+                self.__weather_graphs[i].set(0.05)
 
         else:
             assert False, "지원하지 않는 버튼 인덱스입니다."
@@ -673,7 +680,7 @@ class Core:
 
             self.__google_api_key_label.configure(text_color=self.__basic_font_color)
             self.__google_api_key_entry.delete(0, "end")
-            self.__print_message("구글 지도 API 키가 정상적으로 등록되었습니다.", 3500.0, "#2020FF")
+            self.__print_message("구글 지도 API 키가 정상적으로 등록되었습니다.", 3500.0, self.__blue_color)
         else:
             self.__print_message("유효하지 않는 키입니다. 다시 확인해 주세요.")
 
@@ -686,7 +693,7 @@ class Core:
 
             self.__data_api_key_label.configure(text_color=self.__basic_font_color)
             self.__data_api_key_entry.delete(0, "end")
-            self.__print_message("공공데이터포털 API 키가 정상적으로 등록되었습니다.", 3500.0, "#2020FF")
+            self.__print_message("공공데이터포털 API 키가 정상적으로 등록되었습니다.", 3500.0, self.__blue_color)
         else:
             self.__print_message("유효하지 않는 키입니다. 다시 확인해 주세요.")
 
@@ -706,7 +713,7 @@ class Core:
 
         return decrypted_key
 
-    def __print_message(self, message, show_delay=2000.0, text_color="#FF2020"):
+    def __print_message(self, message, show_delay=2500.0, text_color="#FF2020"):
         if self.__current_frame is self.__main_frame:
             self.__main_frame_message_label.configure(text=message, text_color=text_color)
         else:
