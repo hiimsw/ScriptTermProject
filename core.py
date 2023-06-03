@@ -4,6 +4,7 @@ from course_weather_loader import CourseWeatherLoader, WeatherSearchResult
 from map_loader import MapLoader
 from PIL import Image
 import endecoder as ed
+from document_creator import DocumentCreator
 
 
 class Core:
@@ -51,9 +52,12 @@ class Core:
         self.__selected_tourist_spot_course_id = 0
         self.__cw_loader = None
         self.__map_loader = None
+        self.__doc_creator = None
 
         self.__weather_infos = [{} for _ in range(3)]
         self.__message_label_show_remaining_time = 0.0
+        self.__selected_date = []
+        self.__selected_tourist_spot = ""
 
         self.__blue_color = "#2020FF"
         self.__warning_color = "#FF2020"
@@ -93,16 +97,16 @@ class Core:
 
                         if max_weather_elements[j] > 0.0:
                             cur_value = self.__weather_graphs[graph_index].get()
-                            to_value = float(element_value) / max_weather_elements[j]
+                            to_value = max(0.02, float(element_value) / max_weather_elements[j])
                             self.__weather_graphs[graph_index].set(self.__lerp(cur_value, to_value, 0.35))
                             self.__weather_graph_value_labels[graph_index].configure(text=str(element_value))
                         else:
-                            self.__weather_graphs[graph_index].set(0.05)
+                            self.__weather_graphs[graph_index].set(0.02)
                             self.__weather_graph_value_labels[graph_index].configure(text=str(element_value))
 
                         self.__weather_graphs[graph_index].configure(progress_color="#3A7EBF")
                     else:
-                        self.__weather_graphs[graph_index].set(0.05)
+                        self.__weather_graphs[graph_index].set(0.02)
                         self.__weather_graph_value_labels[graph_index].configure(text='-')
                         self.__weather_graphs[graph_index].configure(progress_color="#C7545C")
 
@@ -114,6 +118,9 @@ class Core:
         decrypted_key = self.__load_key("data")
         if decrypted_key != '':
             self.__cw_loader.connect_api(decrypted_key)
+
+        self.__doc_creator = DocumentCreator()
+        self.__doc_creator.connect_api()
 
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("dark-blue")
@@ -349,7 +356,7 @@ class Core:
                                                 text="이날의 날씨",
                                                 width=10,
                                                 height=15,
-                                                corner_radius=0,
+                                                corner_radius=2,
                                                 command=lambda x=0: self.__change_weather_frame(x))
             weather_view_button.grid(row=0, column=0)
 
@@ -358,7 +365,7 @@ class Core:
                                                    text="상세한 날씨",
                                                    width=10,
                                                    height=15,
-                                                   corner_radius=0,
+                                                   corner_radius=2,
                                                    command=lambda x=1: self.__change_weather_frame(x))
             weather_details_button.grid(row=0, column=1, padx=(2, 0))
         # endregion
@@ -470,11 +477,43 @@ class Core:
         self.__option_frame_message_label.place(relx=0.015, rely=0.947)
         # endregion
 
+        # region 우측 상단 저장 프레임을 정의합니다
+        save_frame = ctk.CTkFrame(master=self.__main_frame, fg_color="transparent")
+        save_frame.place(relx=0.91, rely=0.035)
+
+        google_doc_save_button = ctk.CTkButton(master=save_frame,
+                                               width=10,
+                                               height=10,
+                                               font=self.__basic_font,
+                                               text="구글 저장",
+                                               corner_radius=2,
+                                               command=lambda x=0: self.__save_weather(x))
+        google_doc_save_button.grid(row=0, column=0)
+
+        local_save_button = ctk.CTkButton(master=save_frame,
+                                          width=10,
+                                          height=10,
+                                          font=self.__basic_font,
+                                          text="로컬 저장",
+                                          corner_radius=2,
+                                          command=lambda x=1: self.__save_weather(x))
+        local_save_button.grid(row=1, column=0, pady=(2, 0))
+
+        telegram_save_button = ctk.CTkButton(master=save_frame,
+                                             width=10,
+                                             height=10,
+                                             font=self.__basic_font,
+                                             text="TBot 저장",
+                                             corner_radius=2,
+                                             command=lambda x=2: self.__save_weather(x))
+        telegram_save_button.grid(row=2, column=0, pady=(2, 0))
+        # endregion
+
     def __create_search_result_frame(self):
         self.__search_result_frame = ctk.CTkScrollableFrame(master=self.__search_frame,
                                                             label_font=self.__basic_font,
                                                             label_text="검색 결과",
-                                                            corner_radius=5)
+                                                            corner_radius=2)
         self.__search_result_frame.grid(row=3, column=0, pady=(10, 0), sticky="nsew")
         self.__search_result_frame.grid_columnconfigure(0, weight=1)
 
@@ -577,6 +616,8 @@ class Core:
             self.__print_message("구글 지도 API 키가 유효하지 않아 지도를 표시할 수 없습니다. 키를 다시 확인해 주세요", 4000.0)
 
         self.__selected_tourist_spot_button_index = selected_button_index
+        self.__selected_date.clear()
+        self.__selected_tourist_spot = tourist_spot
 
     def __on_weather_selected(self):
         if self.__selected_tourist_spot_course_id == 0:
@@ -593,6 +634,12 @@ class Core:
         time = self.__time_entry.get().split(':')[0]
         date = int(year + month + day + time)
         tourist_spot = self.__recommand_tourist_spot_buttons[self.__selected_tourist_spot_button_index].cget("text")
+
+        self.__selected_date.clear()
+        self.__selected_date.append(year)
+        self.__selected_date.append(month)
+        self.__selected_date.append(day)
+        self.__selected_date.append(self.__time_entry.get())
 
         search_result, searched_weather = self.__cw_loader.search_weather(self.__selected_tourist_spot_course_id,
                                                                           tourist_spot,
@@ -666,7 +713,7 @@ class Core:
             self.__current_weather_frame = self.__weather_details_frame
 
             for i in range(len(self.__weather_graphs)):
-                self.__weather_graphs[i].set(0.05)
+                self.__weather_graphs[i].set(0.02)
 
         else:
             assert False, "지원하지 않는 버튼 인덱스입니다."
@@ -697,6 +744,48 @@ class Core:
         else:
             self.__print_message("유효하지 않는 키입니다. 다시 확인해 주세요.")
 
+    def __save_weather(self, save_type):
+        assert 0 <= save_type <= 2, "지원하지 않는 저장 타입입니다."
+
+        if self.__selected_tourist_spot == "":
+            self.__print_message("관광지가 선택되어 있지 않아 저장할 수 없습니다.", 3500.0)
+            return
+
+        if len(self.__selected_date) == 0:
+            self.__print_message("날짜가 선택되어 있지 않아 저장할 수 없습니다. 날짜 선택을 다시해 주세요.", 4000.0)
+            return
+
+        substance = "선택한 관광지: {0}\n".format(self.__selected_tourist_spot)
+
+        year = self.__selected_date[0]
+        month = self.__selected_date[1]
+        day = self.__selected_date[2]
+        time = self.__selected_date[3]
+        date = "{0}년 {1}월 {2}일 {3}시".format(year, month, day, time)
+        substance += "지정한 날짜: {0}\n".format(date)
+        substance += "\n[날씨]\n"
+        substance += "기온: {0}\n".format(self.__temperature_label.cget("text"))
+        substance += "풍향: {0}\n".format(self.__wind_direction_label.cget("text"))
+        substance += "풍속: {0}\n".format(self.__wind_speed_label.cget("text"))
+        substance += "하늘상태: {0}\n".format(self.__sky_state_label.cget("text"))
+        substance += "습도: {0}\n".format(self.__humidity_label.cget("text"))
+        substance += "강수량: {0}\n".format(self.__rainfall_probability.cget("text"))
+
+        substance += "\n[추천 코스]\n"
+        for recommand_tourist_spot in self.__recommand_tourist_spot_buttons:
+            substance += recommand_tourist_spot.cget("text") + "\n"
+
+        if save_type == 0:
+            self.__doc_creator.create_doc("{0} {1}".format(date, self.__selected_tourist_spot), substance)
+        elif save_type == 1:
+            filename = ctk.filedialog.asksaveasfilename()
+            if filename != "":
+                file = open(filename + ".txt", "w")
+                file.write(substance)
+                file.close()
+        else:
+            pass
+
     @staticmethod
     def __load_key(file_name):
         try:
@@ -723,6 +812,7 @@ class Core:
     @staticmethod
     def __lerp(a, b, t):
         return a * (1 - t) + b * t
+
 
 if __name__ == '__main__':
     core = Core()
