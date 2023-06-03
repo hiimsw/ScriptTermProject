@@ -16,7 +16,7 @@ class CourseWeatherLoader:
         self.__key = None
         self.__courses = {}
 
-        course_root = ET.parse("course.xml")
+        course_root = ET.parse("data/course.xml")
         for item in course_root.iter("item"):
             course_id = int(item.findtext("id"))
             self.__courses[course_id] = []

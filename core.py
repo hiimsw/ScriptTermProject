@@ -634,7 +634,7 @@ class Core:
         if self.__map_loader.is_api_connected():
             lat_lng = self.__map_loader.find_lat_lng(tourist_spot)
             if lat_lng:
-                self.__map_loader.show_map(lat_lng)
+                self.__map_loader.show_map(tourist_spot, lat_lng)
             else:
                 self.__print_message("'" + tourist_spot + "'의 좌표를 알 수 없어 지도가 표시되지 않습니다.", 3500.0)
         else:

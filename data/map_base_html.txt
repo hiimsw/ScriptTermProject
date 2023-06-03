@@ -37,7 +37,7 @@
         });
 
         var infowindow = new google.maps.InfoWindow({
-          content: "마크",
+          content: "@MARK",
           maxWizzzdth: 100
         });
 

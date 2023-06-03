@@ -6,7 +6,7 @@ from cefpython3 import cefpython as cef
 
 
 class MapLoader:
-    CAHCING_MAP_HTML_PATH: Final = "caching_map.html"
+    CAHCING_MAP_HTML_PATH: Final = "data/caching_map.html"
 
     def __init__(self, frame):
         self.__maps = None
@@ -20,7 +20,7 @@ class MapLoader:
         try:
             self.__maps = googlemaps.Client(key=key)
 
-            map_base_html_file = open("map_base_html.txt", encoding='UTF-8')
+            map_base_html_file = open("data/map_base_html.txt", encoding='UTF-8')
             self.__map_base_html = map_base_html_file.read().replace("@WRITE_KEY", key)
         except:
             return False
@@ -32,11 +32,12 @@ class MapLoader:
 
         return locations[0]['geometry']['location'] if locations else None
 
-    def show_map(self, lat_lng):
+    def show_map(self, tourist_spot, lat_lng):
         assert self.is_api_connected(), "api가 연결되지 않는 상태에서 이 함수를 호출할 수 없습니다."
 
         map_html_file = open(self.CAHCING_MAP_HTML_PATH, 'w', encoding='UTF-8')
         map_html = self.__map_base_html
+        map_html = map_html.replace("@MARK", tourist_spot)
         map_html = map_html.replace("@WRITE_LAT", str(lat_lng["lat"]))
         map_html = map_html.replace("@WRITE_LNG", str(lat_lng["lng"]))
         map_html_file.write(map_html)
