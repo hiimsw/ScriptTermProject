@@ -68,72 +68,28 @@ class Core:
                 self.__print_message("", 0.0)
 
         if self.__current_weather_frame == self.__weather_details_frame:
-            graph_speed = 40 * 0.001
-            max_th3 = 0.0
-            max_wd = 0.0
-            max_ws = 0.0
-            max_sky = 0.0
-            max_rhm = 0.0
-            max_pop = 0.0
+            weather_element_names = ["th3", "wd", "ws", "sky", "rhm", "pop"]
+            max_weather_elements = [0.0 for _ in range(len(weather_element_names))]
 
-            for i in range(len(self.__weather_infos)):
-                if len(self.__weather_infos[i]) == 0:
+            for weather_info in self.__weather_infos:
+                if len(weather_info) == 0:
                     continue
 
-                weather = self.__weather_infos[i]
-                max_th3 = max(max_th3, float(weather['th3']))
-                max_wd = max(max_wd, float(weather['wd']))
-                max_ws = max(max_ws, float(weather['ws']))
-                max_sky = max(max_sky, float(weather['sky']))
-                max_rhm = max(max_rhm, float(weather['rhm']))
-                max_pop = max(max_pop, float(weather['pop']))
+                for j, weather_element_name in enumerate(weather_element_names):
+                    max_weather_elements[j] = max(max_weather_elements[j], float(weather_info[weather_element_name]))
 
-            for i in range(len(self.__weather_infos)):
-                if len(self.__weather_infos[i]) == 0:
+            for i, weather_info in enumerate(self.__weather_infos):
+                if len(weather_info) == 0:
                     continue
 
-                weather = self.__weather_infos[i]
-                if max_th3 != 0.0:
-                    value = self.__weather_graphs[i + 0].get()
-                    value = self.__lerp(value, float(weather['th3']) / max_th3, 5 * graph_speed)
-                    self.__weather_graphs[i + 0].set(value)
-                else:
-                    self.__weather_graphs[i + 0].set(0.01)
-
-                if max_wd != 0.0:
-                    value = self.__weather_graphs[i + 3].get()
-                    value = self.__lerp(value, float(weather['wd']) / max_wd, 5 * graph_speed)
-                    self.__weather_graphs[i + 3].set(value)
-                else:
-                    self.__weather_graphs[i + 3].set(0.01)
-
-                if max_wd != 0.0:
-                    value = self.__weather_graphs[i + 6].get()
-                    value = self.__lerp(value, float(weather['ws']) / max_ws, 5 * graph_speed)
-                    self.__weather_graphs[i + 6].set(value)
-                else:
-                    self.__weather_graphs[i + 6].set(0.01)
-
-                if max_sky != 0.0:
-                    value = self.__weather_graphs[i + 9].get()
-                    value = self.__lerp(value, float(weather['sky']) / max_sky, 5 * graph_speed)
-                    self.__weather_graphs[i + 9].set(value)
-                else:
-                    self.__weather_graphs[i + 9].set(0.01)
-
-                if max_rhm != 0.0:
-                    value = self.__weather_graphs[i + 12].get()
-                    value = self.__lerp(value, float(weather['rhm']) / max_rhm, 5 * graph_speed)
-                    self.__weather_graphs[i + 12].set(value)
-                else:
-                    self.__weather_graphs[i + 12].set(0.01)
-
-                if max_pop != 0.0:
-                    value = self.__weather_graphs[i + 15].get()
-                    value = self.__lerp(value, float(weather['pop']) / max_pop, 5 * graph_speed)
-                    self.__weather_graphs[i + 15].set(value)
-                else:
-                    self.__weather_graphs[i + 15].set(0.01)
+                for j, weather_element_name in enumerate(weather_element_names):
+                    graph_index = i + (j * 3)
+                    if max_weather_elements[j] != 0.0:
+                        cur_value = self.__weather_graphs[graph_index].get()
+                        to_value = float(weather_info[weather_element_name]) / max_weather_elements[j]
+                        self.__weather_graphs[graph_index].set(self.__lerp(cur_value, to_value, 0.35))
+                    else:
+                        self.__weather_graphs[graph_index].set(0.01)
 
         self.__app.after(30, self.__update)
 
