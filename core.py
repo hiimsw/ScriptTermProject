@@ -303,7 +303,7 @@ class Core:
                 self.__weather_graphs.append(graph)
 
                 value_label = ctk.CTkLabel(master=self.__weather_details_frame, font=small_font, text="-")
-                value_label.place(relx=j * 0.09 + (j // 3 * 0.067) + 0.065, rely=(i * 0.43) + 0.39, anchor=ctk.CENTER)
+                value_label.place(relx=j * 0.089 + (j // 3 * 0.067) + 0.065, rely=(i * 0.43) + 0.39, anchor=ctk.CENTER)
                 self.__weather_graph_value_labels.append(value_label)
 
         ctk.CTkLabel(master=self.__weather_details_frame,
