@@ -826,12 +826,14 @@ class Core:
 
         if save_type == 0:
             self.__doc_creator.create_doc("{0} {1}".format(date, self.__selected_tourist_spot), substance)
+            self.__print_message("구글 문서 저장을 완료하였습니다.", 3000.0, self.__blue_color)
         elif save_type == 1:
             filename = ctk.filedialog.asksaveasfilename()
             if filename != "":
                 file = open(filename + ".txt", "w")
                 file.write(substance)
                 file.close()
+            self.__print_message("로컬 위치에 문서 저장을 완료하였습니다.", 3000.0, self.__blue_color)
         else:
             pass
 
