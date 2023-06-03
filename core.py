@@ -40,6 +40,7 @@ class Core:
         self.__rainfall_probability = None
         self.__main_frame_message_label = None
         self.__weather_graphs = []
+        self.__weather_graph_value_labels = []
 
         self.__google_api_key_label = None
         self.__google_api_key_entry = None
@@ -71,6 +72,7 @@ class Core:
             weather_element_names = ["th3", "wd", "ws", "sky", "rhm", "pop"]
             max_weather_elements = [0.0 for _ in range(len(weather_element_names))]
 
+            # 각 날씨 요소의 최대값을 구합니다.
             for weather_info in self.__weather_infos:
                 if len(weather_info) == 0:
                     continue
@@ -78,18 +80,23 @@ class Core:
                 for j, weather_element_name in enumerate(weather_element_names):
                     max_weather_elements[j] = max(max_weather_elements[j], float(weather_info[weather_element_name]))
 
+            # 각 날씨 요소를 그래프에 반영합니다.
             for i, weather_info in enumerate(self.__weather_infos):
                 if len(weather_info) == 0:
                     continue
 
                 for j, weather_element_name in enumerate(weather_element_names):
                     graph_index = i + (j * 3)
+                    element_value = weather_info[weather_element_name]
+
                     if max_weather_elements[j] != 0.0:
                         cur_value = self.__weather_graphs[graph_index].get()
-                        to_value = float(weather_info[weather_element_name]) / max_weather_elements[j]
+                        to_value = float(element_value) / max_weather_elements[j]
                         self.__weather_graphs[graph_index].set(self.__lerp(cur_value, to_value, 0.35))
+                        self.__weather_graph_value_labels[graph_index].configure(text=str(element_value))
                     else:
                         self.__weather_graphs[graph_index].set(0.01)
+                        self.__weather_graph_value_labels[graph_index].configure(text=str(element_value))
 
         self.__app.after(30, self.__update)
 
@@ -281,6 +288,7 @@ class Core:
 
         small_font = ctk.CTkFont(family="맑은 고딕", size=11)
         self.__weather_graphs.clear()
+        self.__weather_graph_value_labels.clear()
 
         for i in range(2):
             for j in range(9):
@@ -292,11 +300,11 @@ class Core:
                                            fg_color=self.__weather_details_frame.cget("fg_color"))
                 graph.place(relx=j * 0.085 + (j // 3 * 0.08) + 0.04, rely=(i * 0.43) + 0.06)
                 graph.set(0.01)
-
                 self.__weather_graphs.append(graph)
 
                 value_label = ctk.CTkLabel(master=self.__weather_details_frame, font=small_font, text="-")
                 value_label.place(relx=j * 0.09 + (j // 3 * 0.067) + 0.065, rely=(i * 0.43) + 0.39, anchor=ctk.CENTER)
+                self.__weather_graph_value_labels.append(value_label)
 
         ctk.CTkLabel(master=self.__weather_details_frame,
                      font=self.__basic_font,
